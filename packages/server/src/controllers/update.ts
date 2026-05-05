@@ -10,7 +10,7 @@ function getNpmBin() {
 }
 
 function getCliBin() {
-  return join(getNodeBinDir(), process.platform === 'win32' ? 'hermes-web-ui.cmd' : 'hermes-web-ui')
+  return process.argv[1]
 }
 
 function getWindowsShell() {
