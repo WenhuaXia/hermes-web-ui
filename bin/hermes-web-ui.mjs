@@ -79,6 +79,11 @@ function getGlobalCliBin() {
     : join(prefix, 'bin', 'hermes-web-ui')
 }
 
+function getCliBin() {
+  return process.argv[1]
+}
+}
+
 function getWindowsShell() {
   const systemRoot = process.env.SystemRoot || 'C:\\Windows'
   const candidates = [

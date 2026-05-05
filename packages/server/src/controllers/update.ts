@@ -47,6 +47,11 @@ function getGlobalPackageBin(root: string) {
   return join(root, 'hermes-web-ui', 'bin', 'hermes-web-ui.mjs')
 }
 
+function getCliBin() {
+  return process.argv[1]
+}
+}
+
 function getCurrentNodeEnv() {
   return {
     ...process.env,
