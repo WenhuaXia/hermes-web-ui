@@ -83,6 +83,12 @@ function handleOutlineNavigate(target: { messageId: string; anchorId: string }) 
   messageListRef.value?.scrollToAnchor(target.messageId, target.anchorId);
 }
 
+function onOutlineMessagesLoaded(messages: any[]) {
+  if (chatStore.activeSession) {
+    chatStore.activeSession.messages = messages;
+  }
+}
+
 async function handleSessionClick(sessionId: string) {
   await router.push({
     name: "hermes.session",
@@ -1421,7 +1427,11 @@ async function handleSessionModelCustomSubmit() {
           <OutlinePanel
             v-if="showOutline"
             :messages="chatStore.messages"
+            :session-id="chatStore.activeSessionId || undefined"
+            :session-profile="chatStore.activeSession ? sessionProfile(chatStore.activeSession.id) : null"
+            :show-load-all="true"
             @navigate="handleOutlineNavigate"
+            @messages-loaded="onOutlineMessagesLoaded"
           />
         </div>
         <div v-if="visibleApproval" class="approval-bar">
