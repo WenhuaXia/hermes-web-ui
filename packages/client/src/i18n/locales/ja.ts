@@ -207,6 +207,7 @@ export default {
     outlineTitle: '会話アウトライン',
     outlineEmpty: '会話内容はありません',
     outlineUserQuestion: 'ユーザーの質問',
+    outlineAnswer: '回答',
     inputPlaceholder: 'メッセージを入力... (Enter で送信、Shift+Enter で改行)',
     slashCommandArgs: {
       message: '<メッセージ>',

@@ -1,5 +1,5 @@
 import { startRunViaSocket, resumeSession, registerSessionHandlers, unregisterSessionHandlers, getChatRunSocket, respondToolApproval, onPeerUserMessage, onSessionCommand, respondClarify, type RunEvent, type ResumeSessionPayload, type ContentBlock as ContentBlockImport } from '@/api/hermes/chat'
-import { deleteSession as deleteSessionApi, fetchSession, fetchSessions, setSessionModel, type HermesMessage, type SessionSummary } from '@/api/hermes/sessions'
+import { deleteSession as deleteSessionApi, fetchSession, fetchSessions, fetchSessionMessagesPaginated, setSessionModel, type HermesMessage, type SessionSummary } from '@/api/hermes/sessions'
 import { getActiveProfileName } from '@/api/client'
 import { getDownloadUrl } from '@/api/hermes/download'
 import { defineStore } from 'pinia'
@@ -175,7 +175,7 @@ async function buildContentBlocks(
   return blocks
 }
 
-function mapHermesMessages(msgs: HermesMessage[]): Message[] {
+export function mapHermesMessages(msgs: HermesMessage[]): Message[] {
   // Filter out assistant messages with no display content unless they carry tool call metadata
   // needed to name later tool result rows when resuming persisted history.
   const filteredMsgs = msgs.filter(m => {
@@ -416,6 +416,9 @@ export const useChatStore = defineStore('chat', () => {
   const isLoadingSessions = ref(false)
   const sessionsLoaded = ref(false)
   const isLoadingMessages = ref(false)
+  const isFetchingAllMessages = ref(false)
+  /** While true, MessageList should suppress auto-scroll-to-bottom */
+  const skipAutoScroll = ref(false)
   const isRunActive = computed(() => isStreaming.value)
 
   // Compression state is scoped per session because sockets can stay joined to
@@ -522,6 +525,50 @@ export const useChatStore = defineStore('chat', () => {
     } catch (err) {
       console.error('Failed to refresh active session:', err)
       return false
+    }
+  }
+
+  async function fetchAllMessages(sessionId: string): Promise<boolean> {
+    isFetchingAllMessages.value = true
+    skipAutoScroll.value = true
+    try {
+      const target = sessions.value.find(s => s.id === sessionId)
+      if (!target) { console.warn('[fetchAllMessages] session not found:', sessionId); return false }
+      const pageSize = 500
+      let allMessages: HermesMessage[] = []
+      let offset = 0
+      let hasMore = true
+
+      while (hasMore) {
+        const result = await fetchSessionMessagesPaginated(sessionId, offset, pageSize, target.profile)
+        if (!result) { console.warn('[fetchAllMessages] result is null at offset', offset); return false }
+        console.log('[fetchAllMessages] fetched', result.messages.length, 'msgs, hasMore:', result.hasMore, 'total:', result.total)
+        allMessages.push(...result.messages)
+        hasMore = result.hasMore
+        offset += result.messages.length
+        if (allMessages.length > 10000) break
+      }
+
+      console.log('[fetchAllMessages] total raw messages:', allMessages.length)
+      const mapped = mapHermesMessages(allMessages)
+      console.log('[fetchAllMessages] mapped messages:', mapped.length)
+      // Force reactivity: replace entire session object so Vue detects the change
+      const updated = { ...target, messages: mapped, messageCount: mapped.length }
+      const idx = sessions.value.findIndex(s => s.id === sessionId)
+      if (idx !== -1) {
+        sessions.value.splice(idx, 1, updated)
+      }
+      if (activeSession.value?.id === sessionId) {
+        activeSession.value = updated
+      }
+      return true
+    } catch (err) {
+      console.error('[fetchAllMessages] Failed:', err)
+      return false
+    } finally {
+      isFetchingAllMessages.value = false
+      // Reset skipAutoScroll after all nextTick callbacks have run
+      setTimeout(() => { skipAutoScroll.value = false }, 0)
     }
   }
 
@@ -2614,6 +2661,8 @@ export const useChatStore = defineStore('chat', () => {
     isLoadingSessions,
     sessionsLoaded,
     isLoadingMessages,
+    isFetchingAllMessages,
+    skipAutoScroll,
 
     newChat,
     newCliSession,
@@ -2628,6 +2677,7 @@ export const useChatStore = defineStore('chat', () => {
     respondToClarify,
     loadSessions,
     refreshActiveSession,
+    fetchAllMessages,
     getThinkingObservation,
     noteThinkingDelta,
     noteReasoningStart,

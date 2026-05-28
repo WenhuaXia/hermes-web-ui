@@ -207,6 +207,7 @@ export default {
     outlineTitle: '대화 개요',
     outlineEmpty: '대화 내용이 없습니다',
     outlineUserQuestion: '사용자 질문',
+    outlineAnswer: '답변',
     inputPlaceholder: '메시지를 입력하세요... (Enter로 전송, Shift+Enter로 줄바꿈)',
     slashCommandArgs: {
       message: '<메시지>',

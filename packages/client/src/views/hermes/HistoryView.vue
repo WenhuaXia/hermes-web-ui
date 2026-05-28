@@ -42,6 +42,13 @@ const hermesSessionsLoaded = ref(false)
 const historySessionId = ref<string | null>(null)
 const historySession = ref<Session | null>(null)
 const showOutline = ref(false)
+
+function onOutlineMessagesLoaded(messages: any[]) {
+  if (historySession.value) {
+    historySession.value.messages = messages
+  }
+}
+
 const isBatchMode = ref(false)
 const isBatchDeleting = ref(false)
 const showBatchDeleteConfirm = ref(false)
@@ -761,7 +768,7 @@ function handleBatchDeleteConfirm() {
         <div class="history-main-content">
           <HistoryMessageList :session="historySession" />
         </div>
-        <OutlinePanel v-if="showOutline && historySession" :messages="historySession.messages || []" />
+        <OutlinePanel v-if="showOutline && historySession" :messages="historySession.messages || []" :sessionId="historySession.id" :sessionProfile="historySession.profile || null" @messages-loaded="onOutlineMessagesLoaded" />
       </div>
     </div>
   </div>

@@ -287,6 +287,12 @@ function handleApproval(choice: "once" | "session" | "always" | "deny") {
   chatStore.respondApproval(choice);
 }
 
+function onOutlineMessagesLoaded(messages: any[]) {
+  if (chatStore.activeSession) {
+    chatStore.activeSession.messages = messages;
+  }
+}
+
 function sessionProfile(sessionId: string): string | null {
   return chatStore.sessions.find((session) => session.id === sessionId)?.profile || null;
 }
@@ -1203,7 +1209,7 @@ async function handleSessionModelCustomSubmit() {
           <div class="chat-main-content">
             <MessageList />
           </div>
-          <OutlinePanel v-if="showOutline" :messages="chatStore.messages" />
+          <OutlinePanel v-if="showOutline" :messages="chatStore.messages" :session-id="chatStore.activeSessionId || undefined" :session-profile="chatStore.activeSession ? sessionProfile(chatStore.activeSession.id) : null" :show-load-all="true" @messages-loaded="onOutlineMessagesLoaded" />
         </div>
         <div v-if="visibleApproval" class="approval-bar">
           <div class="approval-icon" aria-hidden="true">

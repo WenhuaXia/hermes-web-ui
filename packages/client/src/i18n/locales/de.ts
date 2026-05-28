@@ -207,6 +207,7 @@ export default {
     outlineTitle: 'Konversationsübersicht',
     outlineEmpty: 'Kein Konversationsinhalt',
     outlineUserQuestion: 'Benutzerfrage',
+    outlineAnswer: 'Antwort',
     inputPlaceholder: 'Nachricht eingeben... (Enter zum Senden, Shift+Enter fur neue Zeile)',
     slashCommandArgs: {
       message: '<Nachricht>',

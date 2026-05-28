@@ -140,6 +140,7 @@ watch(
 watch(
   () => chatStore.messages[chatStore.messages.length - 1]?.content,
   () => {
+    if (chatStore.skipAutoScroll) return;
     if (chatStore.focusMessageId) {
       scrollToMessage(chatStore.focusMessageId);
       return;
@@ -149,6 +150,7 @@ watch(
   },
 );
 watch(currentToolCalls, () => {
+  if (chatStore.skipAutoScroll) return;
   if (chatStore.focusMessageId) {
     scrollToMessage(chatStore.focusMessageId);
     return;

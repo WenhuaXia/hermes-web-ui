@@ -99,6 +99,51 @@ export async function fetchSession(id: string, profile?: string | null): Promise
 /**
  * Fetch Hermes session detail only (exclude api_server source)
  */
+export interface PaginatedMessagesResult {
+  session: {
+    id: string
+    source: string
+    model: string
+    title: string | null
+    started_at: number
+    ended_at: number | null
+    last_active: number | null
+    message_count: number
+    input_tokens: number
+    output_tokens: number
+  }
+  messages: HermesMessage[]
+  total: number
+  offset: number
+  limit: number
+  hasMore: boolean
+}
+
+/**
+ * Fetch session messages with pagination
+ */
+export async function fetchSessionMessagesPaginated(
+  id: string,
+  offset: number,
+  limit: number,
+  profile?: string | null,
+): Promise<PaginatedMessagesResult | null> {
+  try {
+    const params = new URLSearchParams()
+    params.set('offset', String(offset))
+    params.set('limit', String(limit))
+    if (profile) params.set('profile', profile)
+    const query = params.toString()
+    const res = await request<PaginatedMessagesResult>(`/api/hermes/sessions/conversations/${id}/messages/paginated${query ? `?${query}` : ''}`)
+    return res
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fetch Hermes session detail only (exclude api_server source)
+ */
 export async function fetchHermesSession(id: string, profile?: string | null): Promise<SessionDetail | null> {
   try {
     const params = new URLSearchParams()
