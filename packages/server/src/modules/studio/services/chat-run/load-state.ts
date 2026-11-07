@@ -11,6 +11,8 @@ import { estimateSessionContextTokens } from './context-usage'
 import { getSessionContextUsageEstimate } from '../../repositories/session-context-usage'
 import type { ChatRunSource, SessionState } from './types'
 import { historySessionSource, isBuiltinEkkoAgent } from '../../contracts/history-source'
+import { decideDelegationSweep, persistDelegationTerminal } from './background-delegation-terminal'
+import { getDelegationSweepRows } from '../../../hermes/services/history/sessions-db'
 
 /** Map a persisted display_content payload to a terminal background-delegation status. */
 export function backgroundDelegationTerminalStatus(displayContent: unknown): 'completed' | 'failed' | 'interrupted' | null {
@@ -64,7 +66,36 @@ export function resolveRunSource(source?: string, sessionId?: string): ChatRunSo
 }
 
 export async function loadSessionStateFromDb(sid: string, _sessionMap: Map<string, SessionState>): Promise<SessionState> {
-  return readSessionStateFromDb(sid)
+  const state = readSessionStateFromDb(sid)
+  try {
+    await sweepStaleBackgroundDelegations(sid, state)
+  } catch (err) {
+    logger.warn(err, '[chat-run-socket] stale background delegation sweep failed for session %s', sid)
+  }
+  return state
+}
+
+/**
+ * Self-heal on session load: settle subagent cards that still read 'running'
+ * although the hermes-side record proves the child is dead (or finished).
+ * Without this, a completion that never reached the mirror leaves the card
+ * stuck at 'running' forever and aborts can never make it terminal.
+ * Best-effort: any failure keeps the restored state unchanged.
+ */
+async function sweepStaleBackgroundDelegations(sessionId: string, state: SessionState): Promise<void> {
+  const items = Object.values(state.backgroundDelegations || {}).filter(
+    (item) => (item.status === 'running' || item.status === 'delivering') && item.messageId != null,
+  )
+  if (items.length === 0) return
+  const profile = items.find((item) => item.profile)?.profile || getSession(sessionId)?.profile
+  const rows = await getDelegationSweepRows(profile, items.map((item) => item.delegationId))
+  const nowMs = Date.now()
+  for (const item of items) {
+    const row = rows.get(item.delegationId) || null
+    const decision = decideDelegationSweep({ row, updatedAtMs: item.updatedAt, nowMs })
+    if (decision.decision !== 'terminal') continue
+    persistDelegationTerminal(sessionId, state, item.delegationId, decision.status, decision.summary, row?.taskResults)
+  }
 }
 
 /** Synchronous SQLite hydration keeps cache creation atomic with run admission. */
