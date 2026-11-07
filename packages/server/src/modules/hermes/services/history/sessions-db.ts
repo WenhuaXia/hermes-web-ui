@@ -104,6 +104,82 @@ function sessionDbPathForProfile(profile?: string): string {
   return join(getHermesBaseDir(), 'profiles', name, 'state.db')
 }
 
+export interface HermesDelegationSweepRow {
+  state: string | null
+  ownerPid: number | null
+  dispatchedAt: number | null
+  resultStatus: string | null
+  resultSummary: string | null
+  taskResults?: Array<{ taskIndex?: number; summary?: string | null; status?: string | null }>
+}
+
+/**
+ * Read-only lookup of background delegation records in Hermes state.db.
+ * Used by the stale-subagent sweep to decide whether a card still showing
+ * 'running' has a live owner process (or a terminal record to restore).
+ */
+export async function getDelegationSweepRows(
+  profile: string | undefined,
+  delegationIds: string[],
+): Promise<Map<string, HermesDelegationSweepRow>> {
+  const result = new Map<string, HermesDelegationSweepRow>()
+  const ids = delegationIds.map((value) => String(value || '').trim()).filter(Boolean)
+  if (!SQLITE_AVAILABLE || ids.length === 0) return result
+  const { DatabaseSync } = await import('node:sqlite')
+  const dbPath = sessionDbPathForProfile(profile)
+  if (!existsSync(dbPath)) return result
+  const db = new DatabaseSync(dbPath, { open: true, readOnly: true })
+  try {
+    const placeholders = ids.map(() => '?').join(', ')
+    const rows = db.prepare(
+      `SELECT delegation_id, state, owner_pid, dispatched_at, result_json
+       FROM async_delegations WHERE delegation_id IN (${placeholders})`,
+    ).all(...ids) as Array<Record<string, unknown>>
+    for (const row of rows) {
+      const delegationId = String(row.delegation_id || '').trim()
+      if (!delegationId) continue
+      let resultStatus: string | null = null
+      let resultSummary: string | null = null
+      let taskResults: Array<{ taskIndex?: number; summary?: string | null; status?: string | null }> | undefined
+      if (row.result_json) {
+        try {
+          const parsed = JSON.parse(String(row.result_json)) as Record<string, unknown>
+          const taskList = Array.isArray(parsed.results) ? parsed.results : []
+          if (taskList.length > 0) {
+            taskResults = taskList.map((task, index) => {
+              const item = (task || {}) as Record<string, unknown>
+              return {
+                taskIndex: Number.isFinite(Number(item.task_index)) ? Number(item.task_index) : index,
+                summary: typeof item.summary === 'string' ? item.summary : null,
+                status: typeof item.status === 'string' ? item.status : null,
+              }
+            })
+            resultSummary = taskResults.map((task) => String(task.summary || '').trim()).filter(Boolean).join('\n')
+            resultStatus = taskResults.every((task) => String(task.status || '').toLowerCase() === 'completed')
+              ? 'completed' : null
+          } else if (typeof parsed.summary === 'string') {
+            resultSummary = parsed.summary
+            if (typeof parsed.status === 'string') resultStatus = parsed.status
+          }
+        } catch {
+          // Unparseable result_json: fall back to the row-level state only.
+        }
+      }
+      result.set(delegationId, {
+        state: row.state != null ? String(row.state) : null,
+        ownerPid: row.owner_pid != null && row.owner_pid !== '' ? Number(row.owner_pid) : null,
+        dispatchedAt: row.dispatched_at != null ? Number(row.dispatched_at) : null,
+        resultStatus,
+        resultSummary: resultSummary != null && resultSummary.length > 0 ? resultSummary.slice(0, 4000) : null,
+        taskResults,
+      })
+    }
+  } finally {
+    db.close()
+  }
+  return result
+}
+
 function normalizeNumber(value: unknown, fallback = 0): number {
   if (value == null || value === '') return fallback
   const num = Number(value)
