@@ -11,7 +11,7 @@
  * so "truth wins": a card settled interrupted by abort/sweep flips to completed
  * if the child actually finished afterwards.
  */
-import { updateMessageDisplayContent } from '../../repositories/session-store'
+import { getMessageDisplayContent, updateMessageDisplayContent } from '../../repositories/session-store'
 import { logger } from '../../public/logging'
 import type { SessionState } from './types'
 
@@ -156,6 +156,32 @@ export function persistDelegationTerminal(
 ): boolean {
   const item = state.backgroundDelegations?.[delegationId]
   if (!item || item.messageId == null) return false
+  // Truth-first guard: 'interrupted' must never downgrade a persisted real
+  // terminal state (completed/failed). Abort flushes can land AFTER a late
+  // completion delivery (2026-11-08 incident: a card whose child actually
+  // finished was recorded interrupted in the DB, and the next server restart
+  // flipped the "succeeded" card to "failed" on restore). Truth writes
+  // (completed/failed) stay unconditional.
+  if (status === 'interrupted') {
+    try {
+      const current = getMessageDisplayContent(sessionId, item.messageId)
+      if (current) {
+        const parsed = JSON.parse(current) as Record<string, unknown>
+        const currentStatus = parsed.status ?? (Array.isArray(parsed.tasks)
+          ? (parsed.tasks[0] as Record<string, unknown> | undefined)?.status
+          : undefined)
+        if (currentStatus === 'completed' || currentStatus === 'failed') {
+          logger.info(
+            '[background-delegation] skipped interrupted persist for %s: truth already %s',
+            delegationId, currentStatus,
+          )
+          return false
+        }
+      }
+    } catch {
+      // unparseable display_content — fall through and persist
+    }
+  }
   const payload = buildDelegationTerminalPayload({
     delegationId,
     dispatchPayload: item.dispatchPayload,

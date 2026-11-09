@@ -8,9 +8,11 @@ import {
 import type { SessionState } from '../../packages/server/src/modules/studio/services/chat-run/types'
 
 const updateMessageDisplayContentMock = vi.fn(() => true)
+const getMessageDisplayContentMock = vi.fn<() => string | null>(() => null)
 
 vi.mock('../../packages/server/src/modules/studio/repositories/session-store', () => ({
   updateMessageDisplayContent: (...args: unknown[]) => updateMessageDisplayContentMock(...(args as [])),
+  getMessageDisplayContent: (...args: unknown[]) => getMessageDisplayContentMock(...(args as [])),
 }))
 
 function makeState(overrides?: Partial<SessionState>): SessionState {
@@ -26,6 +28,8 @@ function makeState(overrides?: Partial<SessionState>): SessionState {
 afterEach(() => {
   updateMessageDisplayContentMock.mockReset()
   updateMessageDisplayContentMock.mockReturnValue(true)
+  getMessageDisplayContentMock.mockReset()
+  getMessageDisplayContentMock.mockReturnValue(null)
 })
 
 describe('decideDelegationSweep', () => {
@@ -201,5 +205,64 @@ describe('persistDelegationTerminal', () => {
     expect(ok).toBe(false)
     expect(updateMessageDisplayContentMock).not.toHaveBeenCalled()
     expect(state.backgroundDelegations!.deleg_2.status).toBe('running')
+  })
+
+  it('skips an interrupted persist when a completed truth is already persisted (11-08 downgrade guard)', () => {
+    getMessageDisplayContentMock.mockReturnValue(
+      JSON.stringify({ runtime: 'hermes', mode: 'background', delegation_id: 'deleg_3', status: 'completed', summary: '慢任务已完成。' }),
+    )
+    const state = makeState({
+      backgroundDelegations: {
+        deleg_3: {
+          delegationId: 'deleg_3',
+          status: 'delivering',
+          updatedAt: 1,
+          messageId: 77,
+          dispatchPayload: { goals: ['任务甲'] },
+        },
+      },
+    })
+    const ok = persistDelegationTerminal('sess-1', state, 'deleg_3', 'interrupted', '已中止')
+    expect(ok).toBe(false)
+    expect(updateMessageDisplayContentMock).not.toHaveBeenCalled()
+    // in-memory keeps the truth state — the live card stays "completed"
+    expect(state.backgroundDelegations!.deleg_3.status).toBe('delivering')
+  })
+
+  it('still persists interrupted when no terminal truth is recorded yet', () => {
+    const state = makeState({
+      backgroundDelegations: {
+        deleg_4: {
+          delegationId: 'deleg_4',
+          status: 'running',
+          updatedAt: 1,
+          messageId: 78,
+          dispatchPayload: { goals: ['任务甲'] },
+        },
+      },
+    })
+    const ok = persistDelegationTerminal('sess-1', state, 'deleg_4', 'interrupted', '已中止')
+    expect(ok).toBe(true)
+    expect(updateMessageDisplayContentMock).toHaveBeenCalledWith('sess-1', 78, expect.stringContaining('"status":"interrupted"'))
+  })
+
+  it('skips an interrupted persist when a multi-task payload is already terminal failed', () => {
+    getMessageDisplayContentMock.mockReturnValue(
+      JSON.stringify({ status: 'failed', tasks: [{ task_index: 0, status: 'failed' }, { task_index: 1, status: 'failed' }] }),
+    )
+    const state = makeState({
+      backgroundDelegations: {
+        deleg_5: {
+          delegationId: 'deleg_5',
+          status: 'running',
+          updatedAt: 1,
+          messageId: 79,
+          dispatchPayload: { goals: ['任务甲', '任务乙'] },
+        },
+      },
+    })
+    const ok = persistDelegationTerminal('sess-1', state, 'deleg_5', 'interrupted', '已中止')
+    expect(ok).toBe(false)
+    expect(updateMessageDisplayContentMock).not.toHaveBeenCalled()
   })
 })
