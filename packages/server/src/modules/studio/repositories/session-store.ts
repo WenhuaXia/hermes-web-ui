@@ -1018,6 +1018,20 @@ export function updateMessageDisplayContent(
   return result.changes > 0
 }
 
+/** Read the current display_content of one message (null when absent/unparseable-safe callers handle JSON). */
+export function getMessageDisplayContent(
+  sessionId: string,
+  messageId: number | string,
+): string | null {
+  if (!isSqliteAvailable()) return null
+  const db = getDb()!
+  const row = db.prepare(
+    `SELECT display_content FROM ${MESSAGES_TABLE}
+     WHERE session_id = ? AND id = ?`,
+  ).get(sessionId, messageId) as { display_content: string | null } | undefined
+  return row?.display_content ?? null
+}
+
 export function getMessageCount(sessionId: string): number {
   if (!isSqliteAvailable()) return 0
   const db = getDb()!
