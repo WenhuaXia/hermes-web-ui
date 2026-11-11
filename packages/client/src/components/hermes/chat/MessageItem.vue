@@ -58,6 +58,7 @@ const props = withDefaults(defineProps<{
   assistantAgent?: ChatAgentAvatar
   userProfileName?: string
   userProfileAvatar?: ProfileAvatarData | null
+  readOnly?: boolean
 }>(), {
   userProfileName: "default",
   userProfileAvatar: null,
@@ -258,6 +259,7 @@ const parsedThinking = computed(() =>
 );
 
 const quotableContent = computed(() => {
+  if (props.readOnly) return null
   if (props.message.role !== 'user' && props.message.role !== 'assistant') return null
   if (props.message.isStreaming || isAgentError.value) return null
   const content = props.message.role === 'assistant'
