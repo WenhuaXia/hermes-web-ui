@@ -5,6 +5,7 @@ import { themeAppearanceMessages } from '../theme-appearance-locales'
 import { socialMessagesKo } from '../social-messages-locales'
 
 export default {
+  studioPlugins: {"title":"플러그인","description":"Studio 전체에 페이지, 도구와 자동화를 추가하세요. 한 번 설치하면 모든 계정, 프로필과 작업에서 사용할 수 있습니다.","install":"설치","source":"절대 경로, package{'@'}version 또는 github:owner/repo#commit","trust":"이 플러그인을 신뢰합니다. 서버 코드는 Studio의 OS 권한으로 실행됩니다.","empty":"설치된 플러그인 없음","active":"실행 중","disabled":"비활성","failed":"실패","reload":"새로 로드","rollback":"롤백","logs":"로그","uninstall":"제거","uninstallConfirm":"{name}을 제거할까요? 저장된 데이터는 유지됩니다.","configuration":"설정","secretHint":"비밀 필드를 비워 두면 저장된 값을 유지합니다.","upgrade":"업그레이드","invoke":"실행","arguments":"JSON 인수; 명령은 일반 텍스트 사용","tool":"도구","action":"작업","request":"요청","hero":"나에게 맞는 작업 공간","currentProfile":"현재 프로필 · {profile}","installTitle":"플러그인 설치","installHint":"로컬 디렉터리, 정확한 npm 버전 또는 GitHub 커밋에서 설치하세요.","search":"이름 또는 설명으로 검색…","allStates":"모든 상태","categories":"플러그인 분류","all":"전체","pages":"페이지","chat":"채팅","tools":"도구","automation":"자동화","activeCount":"{count}개 실행 중","noResults":"일치하는 플러그인이 없습니다","details":"상세 정보","open":"열기","manage":"플러그인 관리","overview":"개요","availableIn":"사용 위치","capabilities":"기능 및 권한","noPage":"채팅 명령, 에이전트 도구 또는 워크플로에서 사용하세요.","noConfiguration":"설정이 필요하지 않습니다","developer":"개발 및 유지보수","maintenance":"버전 및 실행","workspace":"플러그인 작업 공간","pageDisabled":"비활성화된 플러그인입니다. 플러그인 화면에서 활성화하세요.","pageUnavailable":"페이지를 사용할 수 없습니다. 상태나 주소를 확인하세요.","backToCenter":"플러그인으로 돌아가기","slot_settings":"설정 사이드바","globalScope":"전역 플러그인 · 모든 계정 및 프로필","author":"작성자","license":"라이선스","repository":"저장소","homepage":"홈페이지","documentation":"문서","issues":"문제 신고","changelog":"변경 기록","slot_page":"기본 사이드바","slot_workspace":"플러그인 작업 공간"},
   dshVersions: {"compatibility": "ACP 어댑터 {revision} · 테스트: 0.2.1-rc.5 / 0.2.2-rc.1", "verified": "검증된 설치: {version}", "pinned": "고정 버전: {version}", "version": "정확한 npm 버전 (예: 0.2.2-rc.1)", "pin": "설치 및 고정", "latest": "최신 버전 검사 및 사용", "restore": "{version} 복원"},
   person: personMessages['ko'],
   sessionTasks: {
@@ -650,9 +651,6 @@ export default {
   },
 
   apiRelay: {
-    campaignSlogan: "더블 일레븐 충전 시 11.11% 추가 크레딧, 최대 1111 크레딧 증정",
-    campaignBadge: "11.11",
-    campaignLabel: "더블 일레븐",
     title: "API 릴레이",
     headline: "주요 AI 모델을 하나의 게이트웨이로",
     description: "APIKEY.FAN은 Ekko Studio의 제휴 API 게이트웨이입니다. Claude, ChatGPT, Grok, Gemini, Zhipu, Kimi, DeepSeek, MiniMax에 통합 API로 접근할 수 있으며, 공식 API 및 SDK와 호환됩니다.",
@@ -3573,6 +3571,12 @@ export default {
   },
 
   changelog: {
+    new_0_8_21_1: "BOT 협업이 완료되거나 수동 중지 또는 실패한 뒤에도 시작한 채팅에 기록 카드를 유지합니다. 카드에서 각 BOT의 원래 표시 가능한 답변을 볼 수 있으며, 데스크톱에서는 채팅과 왼쪽 정렬하고 모바일 화면에 맞춥니다 (#3746)",
+    new_0_8_21_2: "메시지와 협업 카드를 함께 복원하고 이전 협업까지 통합 페이지 탐색을 지원합니다. 세부 내용은 실제 실행 회차를 따르며 계정과 시작 세션의 접근 권한, 기록 비우기 및 삭제 범위를 준수합니다 (#3746)",
+    new_0_8_21_3: "이전 기록을 읽는 동안 BOT 전환, 재연결, 백그라운드 새로 고침 후에도 읽기 창을 유지합니다. 새 답변과 카드 업데이트를 병합하고 맨 아래로 돌아오면 최신 내용을 다시 불러오며 기록 캐시 크기를 제한합니다 (#3746)",
+    new_0_8_21_4: "작업 목록을 설정의 작업 탭으로 이동합니다. 기존 작업 동작과 협업 탭은 유지하고 해당 채팅 상단 진입점을 제거합니다 (#3746)",
+    new_0_8_21_5: "새 App에 선택적으로 활성화하는 통합 타임라인과 대응 캐시 프로토콜을 제공합니다. 활성화하지 않은 클라이언트는 기존 메시지 페이지 탐색을 사용하며 대응 App 업데이트는 별도로 출시합니다 (#3746)",
+    new_0_8_21_6: "OpenAI 호환 음성 전사가 빈 문자열이나 공백만으로 성공했을 때 잘못된 502 대신 빈 전사 결과를 반환하도록 수정합니다. 누락되거나 잘못된 텍스트, 상위 HTTP 오류 및 연결 실패는 계속 오류로 처리합니다 (#3753)",
     new_0_8_20_1: "Person의 대기 중 전달 수를 원본 세션별로 인덱싱하여 대규모 데이터의 전체 테이블 스캔을 줄입니다. 잘못된 기존 JSON을 허용하며 기록을 다시 쓰지 않습니다 (#3723)",
     new_0_8_20_2: "Ekko OpenAI Chat 요청의 시스템 지침을 원래 순서대로 맨 앞의 단일 system 메시지로 통합합니다. 엄격한 채팅 템플릿과의 호환성을 높이고 일반 메시지, 도구, 이미지 및 추론을 보존합니다 (#3728)",
     new_0_8_20_3: "정확한 DSH 버전을 별도 디렉터리에 설치하고 런타임 구성, 의존성 및 ACP 초기화를 확인한 뒤 활성화합니다. 실패하면 현재 설치와 버전 고정을 유지하며 기존의 정상 CLI를 복구 대상으로 보존할 수 있습니다 (#3730)",

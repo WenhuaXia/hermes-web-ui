@@ -5,6 +5,7 @@ import { themeAppearanceMessages } from '../theme-appearance-locales'
 import { socialMessagesZh } from '../social-messages'
 
 export default {
+  studioPlugins: {"title":"插件中心","description":"为整个 Studio 扩展页面、工具和自动化。安装一次，在任意账号、Profile 和任务中使用。","install":"安装","source":"绝对目录、package{'@'}version 或 github:owner/repo#commit","trust":"我信任此插件。后端代码使用 Studio 的操作系统访问权限。","empty":"尚未安装 Studio 插件","active":"运行中","disabled":"已禁用","failed":"失败","reload":"重载","rollback":"回滚","logs":"日志","uninstall":"卸载","uninstallConfirm":"卸载 {name}？已保存的插件数据会保留。","configuration":"配置","secretHint":"密钥字段留空会保留已保存的值。","upgrade":"升级","invoke":"执行","arguments":"JSON 参数；命令支持纯文本","tool":"工具","action":"动作","request":"请求","hero":"让工作区更合你意","currentProfile":"当前 Profile · {profile}","installTitle":"安装插件","installHint":"从本地目录、npm 精确版本或 GitHub 提交安装插件。","search":"搜索插件名称、描述…","allStates":"全部状态","categories":"插件分类","all":"全部","pages":"独立页面","chat":"聊天扩展","tools":"工具","automation":"自动化","activeCount":"{count} 个运行中","noResults":"没有匹配的插件","details":"详情","open":"打开","manage":"管理插件","overview":"概览","availableIn":"使用入口","capabilities":"访问能力","noPage":"通过聊天命令、Agent 工具或工作流使用此插件。","noConfiguration":"此插件无需配置","developer":"开发与维护","maintenance":"版本与运行","workspace":"插件工作区","pageDisabled":"此插件已禁用，请在插件中心启用。","pageUnavailable":"此页面不可用，请检查插件状态或页面地址。","backToCenter":"返回插件中心","slot_settings":"设置侧栏","globalScope":"全局插件 · 所有账号与 Profile 可用","author":"作者","license":"许可证","repository":"代码仓库","homepage":"项目主页","documentation":"文档","issues":"问题反馈","changelog":"更新记录","slot_page":"主侧栏","slot_workspace":"插件独立侧栏"},
   dshVersions: {"compatibility": "ACP 适配器 {revision} · 已测试：0.2.1-rc.5 / 0.2.2-rc.1", "verified": "已验证安装：{version}", "pinned": "固定版本：{version}", "version": "精确 npm 版本（如 0.2.2-rc.1）", "pin": "安装并固定", "latest": "检查并使用最新版", "restore": "恢复 {version}"},
   person: personMessages['zh'],
   sessionTasks: {
@@ -638,9 +639,6 @@ export default {
   },
 
   apiRelay: {
-    campaignSlogan: "双十一充值加赠11.11%额度，最高加赠1111额度",
-    campaignBadge: "双11",
-    campaignLabel: "双十一",
     title: "API 中转",
     headline: "一站接入主流 AI 模型",
     description: "APIKEY.FAN 是 Ekko Studio 的合作中转服务，统一接入 Claude、ChatGPT、Grok、Gemini、智谱、Kimi、DeepSeek 和 MiniMax，兼容官方 API 与 SDK。",
@@ -4046,6 +4044,12 @@ export default {
 
   // 更新日志
   changelog: {
+    new_0_8_21_1: "BOT 协作完成、手动停止或失败后，在发起聊天中保留记录卡片，点击即可查看各 BOT 的原始可见回复；桌面卡片与聊天左对齐，手机布局自适应 (#3746)",
+    new_0_8_21_2: "消息与协作卡片随会话一并恢复，支持统一分页和更早的协作记录；详情按实际执行轮次读取，仅显示当前账号、当前发起会话有权查看的内容，并遵循清空与删除历史的边界 (#3746)",
+    new_0_8_21_3: "阅读旧历史时，切换 BOT、重新连接和后台刷新保留阅读窗口；新回复与卡片更新合并，回到底部时重新加载最新内容，并限制历史缓存大小 (#3746)",
+    new_0_8_21_4: "将任务列表移入设置的“任务”标签页，保留原有任务操作和“协作”标签页，移除聊天顶部对应入口 (#3746)",
+    new_0_8_21_5: "为新版 App 提供可选的统一时间线及配套缓存协议，未启用的客户端继续使用原有消息分页；App 端配套更新单独发布 (#3746)",
+    new_0_8_21_6: "修复 OpenAI 兼容语音转写服务成功返回空文本或纯空白时误报 502 的问题，现按空转写成功返回；缺失或非法文本、上游 HTTP 错误和连接失败仍正常报错 (#3753)",
     new_0_8_20_1: "为 Person 待处理投递计数增加按来源会话查询的索引，减少大数据量时的全表扫描；兼容无效的旧 JSON 数据，不改写历史记录 (#3723)",
     new_0_8_20_2: "Ekko 的 OpenAI Chat 请求将系统指令按原有顺序合并到开头的一条 system 消息，改善严格聊天模板兼容性，并保留普通消息、工具、图片和推理内容 (#3728)",
     new_0_8_20_3: "DSH 升级先在独立目录安装确定版本，检查运行时组合、依赖和 ACP 初始化，通过后才切换；失败时保留当前安装与版本锁定，已有可用 CLI 可作为恢复目标 (#3730)",

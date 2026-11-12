@@ -5,6 +5,7 @@ import { themeAppearanceMessages } from '../theme-appearance-locales'
 import { socialMessagesEs } from '../social-messages-locales'
 
 export default {
+  studioPlugins: {"title":"Complementos","description":"Amplía Studio con páginas, herramientas y automatización. Instala una vez y usa en todas las cuentas, perfiles y tareas.","install":"Instalar","source":"Ruta absoluta, package{'@'}version o github:owner/repo#commit","trust":"Confío en este plugin. Su código de servidor utiliza los permisos del sistema de Studio.","empty":"No hay plugins instalados","active":"Activo","disabled":"Desactivado","failed":"Error","reload":"Recargar","rollback":"Restaurar","logs":"Registros","uninstall":"Desinstalar","uninstallConfirm":"¿Desinstalar {name}? Se conservarán los datos guardados.","configuration":"Configuración","secretHint":"Los campos secretos vacíos conservan sus valores guardados.","upgrade":"Actualizar","invoke":"Ejecutar","arguments":"Argumentos JSON; los comandos aceptan texto","tool":"Herramienta","action":"Acción","request":"Solicitud","hero":"Un espacio a tu medida","currentProfile":"Perfil actual · {profile}","installTitle":"Instalar complemento","installHint":"Instala desde un directorio local, una versión exacta de npm o un commit de GitHub.","search":"Buscar por nombre o descripción…","allStates":"Todos los estados","categories":"Categorías de complementos","all":"Todos","pages":"Páginas","chat":"Chat","tools":"Herramientas","automation":"Automatización","activeCount":"{count} activos","noResults":"No hay complementos coincidentes","details":"Detalles","open":"Abrir","manage":"Gestionar complemento","overview":"Resumen","availableIn":"Dónde usarlo","capabilities":"Capacidades","noPage":"Usa este complemento mediante comandos de chat, herramientas del agente o flujos de trabajo.","noConfiguration":"Este complemento no necesita configuración","developer":"Desarrollo y mantenimiento","maintenance":"Versión y ejecución","workspace":"Espacio del complemento","pageDisabled":"Este complemento está desactivado. Actívalo en el centro de complementos.","pageUnavailable":"Esta página no está disponible. Revisa el estado o la dirección.","backToCenter":"Volver a complementos","slot_settings":"Barra lateral de ajustes","globalScope":"Complementos globales · Todas las cuentas y perfiles","author":"Autor","license":"Licencia","repository":"Repositorio","homepage":"Página del proyecto","documentation":"Documentación","issues":"Informar de un problema","changelog":"Historial de cambios","slot_page":"Barra lateral principal","slot_workspace":"Espacio del complemento"},
   dshVersions: {"compatibility": "Adaptador ACP {revision} · probado: 0.2.1-rc.5 / 0.2.2-rc.1", "verified": "Instalación verificada: {version}", "pinned": "Versión fijada: {version}", "version": "Versión npm exacta (p. ej. 0.2.2-rc.1)", "pin": "Instalar y fijar", "latest": "Comprobar y usar la última", "restore": "Restaurar {version}"},
   person: personMessages['es'],
   sessionTasks: {
@@ -650,9 +651,6 @@ export default {
 
   // Sidebar
   apiRelay: {
-    campaignSlogan: "Doble 11: 11.11% de crédito adicional al recargar, hasta 1111 de crédito adicional",
-    campaignBadge: "11.11",
-    campaignLabel: "Doble 11",
     title: "Relay de API",
     headline: "Los principales modelos de IA en una sola puerta de enlace",
     description: "APIKEY.FAN es la puerta de enlace de API asociada de Ekko Studio. Ofrece acceso unificado a Claude, ChatGPT, Grok, Gemini, Zhipu, Kimi, DeepSeek y MiniMax, y es compatible con las API y los SDK oficiales.",
@@ -3574,6 +3572,12 @@ jobTriggered: 'Job ejecutado',
   },
 
   changelog: {
+    new_0_8_21_1: "Conservar tarjetas de historial en el chat de origen cuando la colaboración entre BOT termina, se detiene manualmente o falla. Cada tarjeta permite leer las respuestas originales visibles de los BOT, con alineación izquierda en escritorio y diseño adaptable en móvil (#3746)",
+    new_0_8_21_2: "Restaurar mensajes y tarjetas de colaboración juntos con paginación unificada, incluidas colaboraciones antiguas. Los detalles siguen las rondas reales de ejecución y respetan el acceso de la cuenta y sesión de origen, así como el historial vaciado o eliminado (#3746)",
+    new_0_8_21_3: "Conservar la ventana de lectura del historial antiguo al cambiar de BOT, reconectar o actualizar en segundo plano. Combinar nuevas respuestas y cambios de tarjetas, recargar lo más reciente al volver al final y limitar el tamaño de la caché de historial (#3746)",
+    new_0_8_21_4: "Mover la lista de tareas a la pestaña Tareas de ajustes, conservando las acciones de tareas y la pestaña Colaboración y retirando las entradas correspondientes de la cabecera del chat (#3746)",
+    new_0_8_21_5: "Ofrecer una cronología unificada opcional y su protocolo de caché para Apps nuevas. Los clientes que no la activen mantienen la paginación anterior; la actualización complementaria de la App se publica por separado (#3746)",
+    new_0_8_21_6: "Aceptar transcripciones de voz compatibles con OpenAI que terminan correctamente con texto vacío o solo espacios, en lugar de devolver un 502 incorrecto. El texto ausente o inválido, los errores HTTP del proveedor y los fallos de conexión siguen siendo errores (#3753)",
     new_0_8_20_1: "Indexar los recuentos de entregas pendientes de Person por sesión de origen para reducir recorridos completos en grandes conjuntos de datos; admitir JSON antiguo malformado sin reescribir el historial (#3723)",
     new_0_8_20_2: "Unificar las instrucciones del sistema de Ekko OpenAI Chat en un único mensaje system inicial, en su orden original, para plantillas estrictas, conservando mensajes normales, herramientas, imágenes y razonamiento (#3728)",
     new_0_8_20_3: "Instalar versiones exactas de DSH en directorios separados y comprobar la composición del entorno, las dependencias y la inicialización ACP antes de activarlas. Un fallo conserva la instalación y la versión fijada; una CLI existente que funcione puede mantenerse para recuperación (#3730)",

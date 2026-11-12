@@ -499,6 +499,7 @@ export class AgentRuntime {
     input.signal?.addEventListener('abort', interruptPlan, { once: true })
     try {
       const skillRouting = await this.skillRouting(input, true)
+      if (executionToolContext.transformInput) input = { ...input, messages: await executionToolContext.transformInput(input.messages) }
       messages.push(...this.prepareMessages(
         input,
         memoryContext ? this.memory?.contextPrompt(memoryContext) : undefined,
@@ -573,6 +574,7 @@ export class AgentRuntime {
         const modelClient = this.modelClientFor(input)
         emit({ type: 'model.started', runId, step })
         const request = this.modelRequest(input, messages, modelClient, contextKey, modelSignal)
+        if (executionToolContext.transformContext) request.messages = await executionToolContext.transformContext(request.messages)
         request.metadata = { ...request.metadata, session_id: contextKey || runId }
         const recoveryDirective = this.currentRecoveryDirective()
         if (!finalReply && recoveryDirective?.active && request.tools?.length) {

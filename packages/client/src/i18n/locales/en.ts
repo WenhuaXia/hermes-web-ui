@@ -5,6 +5,7 @@ import { themeAppearanceMessages } from '../theme-appearance-locales'
 import { socialMessagesEn } from '../social-messages'
 
 export default {
+  studioPlugins: {"title":"Plugins","description":"Extend Studio with pages, tools and automation. Install once and use across accounts, profiles and tasks.","install":"Install","source":"Absolute directory, package{'@'}version or github:owner/repo#commit","trust":"I trust this plugin. Server code runs with Studio's operating-system access.","empty":"No Studio plugins installed","active":"Active","disabled":"Disabled","failed":"Failed","reload":"Reload","rollback":"Rollback","logs":"Logs","uninstall":"Uninstall","uninstallConfirm":"Uninstall {name}? Stored plugin data is retained.","configuration":"Configuration","secretHint":"Blank secret fields retain their saved values.","upgrade":"Upgrade","invoke":"Run","arguments":"JSON arguments; commands accept plain text","tool":"Tool","action":"Action","request":"Request","hero":"Make room for your workflow","currentProfile":"Current profile · {profile}","installTitle":"Install plugin","installHint":"Install from a local directory, an exact npm version or a GitHub commit.","search":"Search plugins by name or description…","allStates":"All statuses","categories":"Plugin categories","all":"All","pages":"Pages","chat":"Chat","tools":"Tools","automation":"Automation","activeCount":"{count} active","noResults":"No matching plugins","details":"Details","open":"Open","manage":"Manage plugin","overview":"Overview","availableIn":"Where to use it","capabilities":"Capabilities","noPage":"Use this plugin through chat commands, agent tools or workflows.","noConfiguration":"This plugin needs no configuration","developer":"Developer & maintenance","maintenance":"Version & runtime","workspace":"Plugin workspace","pageDisabled":"This plugin is disabled. Enable it in the plugin center.","pageUnavailable":"This page is unavailable. Check the plugin status or page address.","backToCenter":"Back to plugins","slot_settings":"Settings sidebar","globalScope":"Global plugins · All accounts and profiles","author":"Author","license":"License","repository":"Repository","homepage":"Homepage","documentation":"Documentation","issues":"Report an issue","changelog":"Changelog","slot_page":"Main sidebar","slot_workspace":"Plugin workspace"},
   dshVersions: {"compatibility": "ACP adapter {revision} · tested: 0.2.1-rc.5 / 0.2.2-rc.1", "verified": "Verified installation: {version}", "pinned": "Pinned version: {version}", "version": "Exact npm version (e.g. 0.2.2-rc.1)", "pin": "Install and pin", "latest": "Check and use latest", "restore": "Restore {version}"},
   person: personMessages['en'],
   sessionTasks: {
@@ -638,9 +639,6 @@ export default {
 
   // Sidebar
   apiRelay: {
-    campaignSlogan: "Double 11: 11.11% bonus credit on recharges, up to 1111 in bonus credit",
-    campaignBadge: "11.11",
-    campaignLabel: "Double 11",
     title: "API Relay",
     headline: "Leading AI models, one gateway",
     description: "APIKEY.FAN is Ekko Studio’s partner API gateway, offering unified access to Claude, ChatGPT, Grok, Gemini, Zhipu, Kimi, DeepSeek, and MiniMax. It is compatible with official APIs and SDKs.",
@@ -3998,6 +3996,12 @@ export default {
 
   // Changelog
   changelog: {
+    new_0_8_21_1: "Keep collaboration cards in the initiating chat after BOT collaboration completes, is stopped manually, or fails. Open a card to read each BOT’s original visible replies; cards align with desktop chat and adapt to mobile screens (#3746)",
+    new_0_8_21_2: "Restore messages and collaboration cards together with unified pagination, including older collaborations. Details follow actual execution rounds, respect account and initiating-session access, and honor cleared or deleted history (#3746)",
+    new_0_8_21_3: "Preserve the older reading window when switching BOTs, reconnecting, or refreshing in the background. Merge new replies and card updates, reload the latest content when returning to the bottom, and bound the history cache (#3746)",
+    new_0_8_21_4: "Move the task list to the Tasks tab in settings, retaining task actions and the Collaboration tab while removing the corresponding chat-header entries (#3746)",
+    new_0_8_21_5: "Offer an optional unified timeline and matching cache protocol for newer Apps. Clients that do not enable it retain existing message pagination; the companion App update ships separately (#3746)",
+    new_0_8_21_6: "Accept successful empty or whitespace-only OpenAI-compatible speech transcripts instead of returning an incorrect 502. Missing or invalid text, upstream HTTP errors, and connection failures remain errors (#3753)",
     new_0_8_20_1: "Index pending Person delivery counts by origin session to reduce full table scans on large datasets; tolerate malformed legacy JSON without rewriting history (#3723)",
     new_0_8_20_2: "Combine Ekko OpenAI Chat system instructions into one leading system message in their original order for strict chat templates, preserving regular messages, tools, images and reasoning (#3728)",
     new_0_8_20_3: "Stage exact DSH releases in separate directories and check runtime composition, dependencies and ACP initialization before activation. Failed upgrades preserve the current installation and pin; a working existing CLI can be retained for recovery (#3730)",

@@ -5,6 +5,7 @@ import { themeAppearanceMessages } from '../theme-appearance-locales'
 import { socialMessagesZhTw } from '../social-messages'
 
 export default {
+  studioPlugins: {"title":"外掛中心","description":"為整個 Studio 擴充頁面、工具與自動化。安裝一次，即可在任意帳號、Profile 與任務中使用。","install":"安裝","source":"絕對目錄、package{'@'}version 或 github:owner/repo#commit","trust":"我信任此外掛。後端程式碼使用 Studio 的作業系統存取權限。","empty":"尚未安裝 Studio 外掛","active":"執行中","disabled":"已停用","failed":"失敗","reload":"重新載入","rollback":"回復版本","logs":"記錄","uninstall":"解除安裝","uninstallConfirm":"解除安裝 {name}？已儲存的外掛資料會保留。","configuration":"設定","secretHint":"密鑰欄位留空會保留已儲存的值。","upgrade":"升級","invoke":"執行","arguments":"JSON 參數；命令支援純文字","tool":"工具","action":"動作","request":"請求","hero":"讓工作區更合你意","currentProfile":"目前 Profile · {profile}","installTitle":"安裝外掛","installHint":"從本機目錄、npm 精確版本或 GitHub 提交安裝外掛。","search":"搜尋外掛名稱、描述…","allStates":"所有狀態","categories":"外掛分類","all":"全部","pages":"獨立頁面","chat":"聊天擴充","tools":"工具","automation":"自動化","activeCount":"{count} 個執行中","noResults":"沒有符合的外掛","details":"詳細資訊","open":"開啟","manage":"管理外掛","overview":"概覽","availableIn":"使用入口","capabilities":"存取能力","noPage":"透過聊天命令、Agent 工具或工作流程使用此外掛。","noConfiguration":"此外掛無需設定","developer":"開發與維護","maintenance":"版本與執行","workspace":"外掛工作區","pageDisabled":"此外掛已停用，請至外掛中心啟用。","pageUnavailable":"此頁面無法使用，請檢查外掛狀態或頁面網址。","backToCenter":"返回外掛中心","slot_settings":"設定側欄","globalScope":"全域外掛 · 所有帳號與 Profile 可用","author":"作者","license":"授權條款","repository":"程式碼倉庫","homepage":"專案首頁","documentation":"文件","issues":"問題回報","changelog":"更新紀錄","slot_page":"主側欄","slot_workspace":"外掛獨立側欄"},
   dshVersions: {"compatibility": "ACP 適配器 {revision} · 已測試：0.2.1-rc.5 / 0.2.2-rc.1", "verified": "已驗證安裝：{version}", "pinned": "固定版本：{version}", "version": "精確 npm 版本（如 0.2.2-rc.1）", "pin": "安裝並固定", "latest": "檢查並使用最新版", "restore": "還原 {version}"},
   person: personMessages['zh-TW'],
   sessionTasks: {
@@ -638,9 +639,6 @@ export default {
   },
 
   apiRelay: {
-    campaignSlogan: "雙十一儲值加贈11.11%額度，最高加贈1111額度",
-    campaignBadge: "雙11",
-    campaignLabel: "雙十一",
     title: "API 中轉",
     headline: "一站接入主流 AI 模型",
     description: "APIKEY.FAN 是 Ekko Studio 的合作中轉服務，統一接入 Claude、ChatGPT、Grok、Gemini、智譜、Kimi、DeepSeek 和 MiniMax，相容官方 API 與 SDK。",
@@ -3936,6 +3934,12 @@ export default {
 
   // 更新日誌
   changelog: {
+    new_0_8_21_1: "BOT 協作完成、手動停止或失敗後，在發起聊天中保留記錄卡片，點擊即可查看各 BOT 的原始可見回覆；桌面卡片與聊天靠左對齊，手機版面自適應 (#3746)",
+    new_0_8_21_2: "訊息與協作卡片隨對話一併還原，支援統一分頁和更早的協作記錄；詳細內容依實際執行回合讀取，僅顯示目前帳號、目前發起對話有權查看的內容，並遵循清空與刪除歷史的邊界 (#3746)",
+    new_0_8_21_3: "閱讀舊歷史時，切換 BOT、重新連線和背景重新整理會保留閱讀視窗；合併新回覆與卡片更新，回到底部時重新載入最新內容，並限制歷史快取大小 (#3746)",
+    new_0_8_21_4: "將任務清單移至設定的「任務」分頁，保留原有任務操作和「協作」分頁，移除聊天頂部對應入口 (#3746)",
+    new_0_8_21_5: "為新版 App 提供可選的統一時間線及配套快取協定，未啟用的用戶端繼續使用原有訊息分頁；App 端配套更新另行發布 (#3746)",
+    new_0_8_21_6: "修復 OpenAI 相容語音轉寫服務成功回傳空文字或純空白時誤報 502 的問題，現在以空轉寫成功回傳；缺少或無效文字、上游 HTTP 錯誤和連線失敗仍正常報錯 (#3753)",
     new_0_8_20_1: "為 Person 待處理投遞計數增加依來源對話查詢的索引，減少大量資料時的全表掃描；相容無效的舊 JSON 資料，不改寫歷史記錄 (#3723)",
     new_0_8_20_2: "Ekko 的 OpenAI Chat 請求將系統指令依原有順序合併到開頭的一則 system 訊息，改善嚴格聊天範本相容性，並保留一般訊息、工具、圖片與推理內容 (#3728)",
     new_0_8_20_3: "DSH 升級先在獨立目錄安裝確定版本，檢查執行環境組合、相依套件與 ACP 初始化，通過後才切換；失敗時保留目前安裝與版本鎖定，既有可用 CLI 可作為還原目標 (#3730)",

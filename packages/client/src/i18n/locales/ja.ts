@@ -5,6 +5,7 @@ import { themeAppearanceMessages } from '../theme-appearance-locales'
 import { socialMessagesJa } from '../social-messages-locales'
 
 export default {
+  studioPlugins: {"title":"プラグイン","description":"Studio 全体にページ、ツール、自動化を追加。一度のインストールで、すべてのアカウント、プロファイル、タスクから利用できます。","install":"インストール","source":"絶対パス、package{'@'}version または github:owner/repo#commit","trust":"このプラグインを信頼します。サーバーコードは Studio の OS 権限で実行されます。","empty":"プラグインはありません","active":"実行中","disabled":"無効","failed":"失敗","reload":"再読み込み","rollback":"ロールバック","logs":"ログ","uninstall":"アンインストール","uninstallConfirm":"{name} を削除しますか？保存データは保持されます。","configuration":"設定","secretHint":"秘密値の欄を空にすると保存値を保持します。","upgrade":"更新","invoke":"実行","arguments":"JSON 引数。コマンドはテキストを使用します","tool":"ツール","action":"アクション","request":"リクエスト","hero":"自分に合ったワークスペースへ","currentProfile":"現在のプロファイル · {profile}","installTitle":"プラグインをインストール","installHint":"ローカルディレクトリ、npm の固定バージョン、GitHub コミットからインストールします。","search":"名前や説明で検索…","allStates":"すべての状態","categories":"プラグイン分類","all":"すべて","pages":"ページ","chat":"チャット","tools":"ツール","automation":"自動化","activeCount":"{count} 件実行中","noResults":"一致するプラグインはありません","details":"詳細","open":"開く","manage":"管理","overview":"概要","availableIn":"利用場所","capabilities":"機能と権限","noPage":"チャットコマンド、エージェントツール、ワークフローで利用できます。","noConfiguration":"設定は不要です","developer":"開発と保守","maintenance":"バージョンと実行","workspace":"プラグイン作業領域","pageDisabled":"無効になっています。プラグイン画面で有効にしてください。","pageUnavailable":"ページを利用できません。状態やアドレスを確認してください。","backToCenter":"プラグインに戻る","slot_settings":"設定サイドバー","globalScope":"グローバルプラグイン · 全アカウント・プロファイル共通","author":"作者","license":"ライセンス","repository":"リポジトリ","homepage":"ホームページ","documentation":"ドキュメント","issues":"問題を報告","changelog":"変更履歴","slot_page":"メインサイドバー","slot_workspace":"プラグインワークスペース"},
   dshVersions: {"compatibility": "ACP アダプター {revision} · テスト済み: 0.2.1-rc.5 / 0.2.2-rc.1", "verified": "検証済み: {version}", "pinned": "固定バージョン: {version}", "version": "正確な npm バージョン（例: 0.2.2-rc.1）", "pin": "インストールして固定", "latest": "最新版を検証して使用", "restore": "{version} に戻す"},
   person: personMessages['ja'],
   sessionTasks: {
@@ -650,9 +651,6 @@ export default {
   },
 
   apiRelay: {
-    campaignSlogan: "ダブルイレブン：チャージで11.11%の追加クレジット、最大1111クレジット",
-    campaignBadge: "11.11",
-    campaignLabel: "ダブルイレブン",
     title: "APIリレー",
     headline: "主要なAIモデルを一つの窓口で",
     description: "APIKEY.FANはEkko Studioの提携APIゲートウェイです。Claude、ChatGPT、Grok、Gemini、Zhipu、Kimi、DeepSeek、MiniMaxに統一APIで接続でき、公式APIとSDKに対応しています。",
@@ -3573,6 +3571,12 @@ export default {
   },
 
   changelog: {
+    new_0_8_21_1: "BOT の協作が完了、手動停止、失敗した後も、開始元のチャットに記録カードを保持。カードから各 BOT の元の表示可能な返信を確認できます。デスクトップではチャットと左揃えにし、モバイル画面にも対応します (#3746)",
+    new_0_8_21_2: "メッセージと協作カードを一緒に復元し、古い協作を含む統一ページングに対応。詳細は実際の実行ラウンドに基づき、アカウントと開始元セッションの閲覧権限、履歴の消去・削除を尊重します (#3746)",
+    new_0_8_21_3: "古い履歴の閲覧位置を BOT 切り替え、再接続、バックグラウンド更新後も保持。新しい返信とカード更新を統合し、最下部に戻ると最新内容を再取得して、履歴キャッシュのサイズを制限します (#3746)",
+    new_0_8_21_4: "タスク一覧を設定の「タスク」タブへ移動。既存のタスク操作と「協作」タブを保持し、対応するチャット上部の入口を削除します (#3746)",
+    new_0_8_21_5: "新しい App 向けに任意で有効化できる統一タイムラインと対応キャッシュプロトコルを提供。未使用のクライアントは従来のメッセージページングを継続し、対応 App 更新は別途公開します (#3746)",
+    new_0_8_21_6: "OpenAI 互換の音声文字起こしが空文字列や空白のみで正常終了した場合、誤った 502 ではなく空の結果を返すよう修正。文字列の欠落・不正、上流 HTTP エラー、接続失敗は引き続きエラーになります (#3753)",
     new_0_8_20_1: "Person の保留中配信件数を送信元セッション別に索引化し、大量データでの全表走査を削減。不正な旧 JSON にも対応し、履歴は書き換えません (#3723)",
     new_0_8_20_2: "Ekko の OpenAI Chat リクエストでシステム指示を元の順序のまま先頭の単一 system メッセージに統合。厳密なチャットテンプレートとの互換性を改善し、通常のメッセージ、ツール、画像、推論を保持します (#3728)",
     new_0_8_20_3: "DSH の確定バージョンを個別ディレクトリに準備し、ランタイム構成、依存関係、ACP 初期化を検証してから有効化。失敗時は現在のインストールと固定設定を保持し、既存の動作する CLI を復元先として残せます (#3730)",

@@ -5,6 +5,7 @@ import { themeAppearanceMessages } from '../theme-appearance-locales'
 import { socialMessagesFr } from '../social-messages-locales'
 
 export default {
+  studioPlugins: {"title":"Extensions","description":"Ajoutez des pages, outils et automatisations à Studio. Installez une fois pour tous les comptes, profils et tâches.","install":"Installer","source":"Dossier absolu, package{'@'}version ou github:owner/repo#commit","trust":"Je fais confiance à ce plugin. Son code serveur utilise les droits système de Studio.","empty":"Aucun plugin installé","active":"Actif","disabled":"Désactivé","failed":"Échec","reload":"Recharger","rollback":"Restaurer","logs":"Journaux","uninstall":"Désinstaller","uninstallConfirm":"Désinstaller {name} ? Les données enregistrées seront conservées.","configuration":"Configuration","secretHint":"Les champs secrets vides conservent leur valeur enregistrée.","upgrade":"Mettre à jour","invoke":"Exécuter","arguments":"Arguments JSON ; texte libre pour les commandes","tool":"Outil","action":"Action","request":"Demande","hero":"Un espace à votre façon","currentProfile":"Profil actuel · {profile}","installTitle":"Installer une extension","installHint":"Installez depuis un dossier local, une version npm précise ou un commit GitHub.","search":"Rechercher par nom ou description…","allStates":"Tous les états","categories":"Catégories des extensions","all":"Tout","pages":"Pages","chat":"Discussion","tools":"Outils","automation":"Automatisation","activeCount":"{count} actives","noResults":"Aucune extension correspondante","details":"Détails","open":"Ouvrir","manage":"Gérer l’extension","overview":"Aperçu","availableIn":"Points d’accès","capabilities":"Fonctionnalités","noPage":"Utilisez cette extension via les commandes de discussion, les outils d’agent ou les workflows.","noConfiguration":"Cette extension ne nécessite aucune configuration","developer":"Développement et maintenance","maintenance":"Version et exécution","workspace":"Espace de l’extension","pageDisabled":"Cette extension est désactivée. Activez-la dans le centre des extensions.","pageUnavailable":"Cette page est indisponible. Vérifiez l’état ou l’adresse.","backToCenter":"Retour aux extensions","slot_settings":"Barre latérale des paramètres","globalScope":"Extensions globales · Tous les comptes et profils","author":"Auteur","license":"Licence","repository":"Dépôt","homepage":"Site du projet","documentation":"Documentation","issues":"Signaler un problème","changelog":"Historique des modifications","slot_page":"Barre latérale principale","slot_workspace":"Espace du plugin"},
   dshVersions: {"compatibility": "Adaptateur ACP {revision} · testé : 0.2.1-rc.5 / 0.2.2-rc.1", "verified": "Installation vérifiée : {version}", "pinned": "Version épinglée : {version}", "version": "Version npm exacte (ex. 0.2.2-rc.1)", "pin": "Installer et épingler", "latest": "Vérifier et utiliser la dernière", "restore": "Restaurer {version}"},
   person: personMessages['fr'],
   sessionTasks: {
@@ -650,9 +651,6 @@ export default {
 
   // Sidebar
   apiRelay: {
-    campaignSlogan: "Double 11 : 11.11% de crédit offert sur les recharges, jusqu’à 1111 de crédit offert",
-    campaignBadge: "11.11",
-    campaignLabel: "Double 11",
     title: "Relais API",
     headline: "Les principaux modèles IA, une seule passerelle",
     description: "APIKEY.FAN est la passerelle API partenaire d’Ekko Studio. Elle offre un accès unifié à Claude, ChatGPT, Grok, Gemini, Zhipu, Kimi, DeepSeek et MiniMax, et est compatible avec les API et SDK officiels.",
@@ -3574,6 +3572,12 @@ jobTriggered: 'Job declenche',
   },
 
   changelog: {
+    new_0_8_21_1: "Conserver les cartes d’historique dans le chat d’origine après la fin, l’arrêt manuel ou l’échec d’une collaboration entre BOT. Chaque carte permet de lire les réponses originales visibles des BOT, avec un alignement à gauche sur ordinateur et une présentation adaptée au mobile (#3746)",
+    new_0_8_21_2: "Restaurer ensemble messages et cartes de collaboration avec une pagination commune, y compris les anciennes collaborations. Les détails suivent les tours réels d’exécution et respectent les droits du compte et de la session d’origine ainsi que l’historique vidé ou supprimé (#3746)",
+    new_0_8_21_3: "Préserver la fenêtre de lecture de l’ancien historique lors d’un changement de BOT, d’une reconnexion ou d’une actualisation en arrière-plan. Fusionner les nouvelles réponses et cartes, recharger les dernières données au retour en bas et limiter la taille du cache d’historique (#3746)",
+    new_0_8_21_4: "Déplacer la liste des tâches vers l’onglet Tâches des paramètres, en conservant les actions et l’onglet Collaboration et en retirant les entrées correspondantes de l’en-tête du chat (#3746)",
+    new_0_8_21_5: "Proposer aux nouvelles Apps une chronologie unifiée facultative et son protocole de cache. Les clients qui ne l’activent pas conservent la pagination existante ; la mise à jour App correspondante est publiée séparément (#3746)",
+    new_0_8_21_6: "Accepter les transcriptions vocales compatibles OpenAI réussies avec un texte vide ou composé d’espaces, au lieu de renvoyer un 502 erroné. Les textes absents ou invalides, erreurs HTTP en amont et échecs de connexion restent des erreurs (#3753)",
     new_0_8_20_1: "Indexer les décomptes de livraisons Person en attente par session d’origine pour réduire les parcours complets sur de grandes bases ; tolérer les anciens JSON malformés sans réécrire l’historique (#3723)",
     new_0_8_20_2: "Regrouper les instructions système des requêtes Ekko OpenAI Chat dans un seul message system initial, dans leur ordre d’origine, pour les modèles de conversation stricts, en préservant messages ordinaires, outils, images et raisonnement (#3728)",
     new_0_8_20_3: "Installer les versions exactes de DSH dans des répertoires distincts et vérifier la composition du runtime, les dépendances et l’initialisation ACP avant activation. Un échec préserve l’installation et la version épinglée ; une CLI existante fonctionnelle peut servir à la restauration (#3730)",
