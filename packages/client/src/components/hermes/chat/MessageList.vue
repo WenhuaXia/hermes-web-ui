@@ -147,6 +147,11 @@ const currentToolCalls = computed(() => {
 const visibleToolCalls = computed(() =>
   props.hideToolCalls ? [] : currentToolCalls.value.filter((tool) => !!tool.toolName),
 );
+// Subagent cards need full height (goal + live steps); the 26px chip panel
+// clips them into an unreadable sliver, so they render below the panel and
+// the live area grows to fit them.
+const liveSubagentTools = computed(() => visibleToolCalls.value.filter(isSubagentToolCall));
+const liveChipTools = computed(() => visibleToolCalls.value.filter((tool) => !isSubagentToolCall(tool)));
 
 const liveReasoningDetail = computed<{
   messageId: Message["id"]
@@ -906,7 +911,7 @@ defineExpose({
       </template>
       <template #after>
         <Transition name="fade">
-        <div v-if="isRunIndicatorActive" class="streaming-indicator">
+        <div v-if="isRunIndicatorActive" class="streaming-indicator" :class="{ 'has-subagent-cards': liveSubagentTools.length > 0 }">
           <LiveReasoningStatus
             :deployment-session-id="chatStore.activeSessionId || ''"
             :agent="assistantAgent"
@@ -916,7 +921,7 @@ defineExpose({
             :reasoning-id="liveReasoningDetail?.messageId"
             :elapsed="formattedThinkingElapsed"
           />
-          <div v-if="visibleToolCalls.length > 0 || chatStore.compressionState || chatStore.abortState" class="tool-calls-panel">
+          <div v-if="liveChipTools.length > 0 || chatStore.compressionState || chatStore.abortState" class="tool-calls-panel">
             <!-- Abort indicator -->
             <div v-if="chatStore.abortState" class="tool-call-item compression-item">
               <svg
@@ -999,11 +1004,9 @@ defineExpose({
                 class="tool-call-spinner"
               ></span>
             </div>
-            <!-- Tool calls -->
-            <template v-for="tc in visibleToolCalls" :key="tc.id">
-              <SubagentCard v-if="isSubagentToolCall(tc)" :tool-call-id="tc.toolCallId" />
+            <!-- Tool calls (compact chips; subagent cards render below the panel) -->
+            <template v-for="tc in liveChipTools" :key="tc.id">
               <div
-                v-else
                 class="tool-call-item"
                 :class="{ 'subagent-entry': isSubagentToolCall(tc) }"
                 :role="isSubagentToolCall(tc) ? 'button' : undefined"
@@ -1081,6 +1084,10 @@ defineExpose({
             </div>
             </template>
           </div>
+          <!-- 子任务结构化卡片：完整高度，不被 26px 工具条裁切 -->
+          <template v-for="tc in liveSubagentTools" :key="tc.id">
+            <SubagentCard :tool-call-id="tc.toolCallId" />
+          </template>
         </div>
         </Transition>
       </template>
@@ -1963,6 +1970,16 @@ defineExpose({
   padding: calc(4px * var(--spacing-scale, 1));
   box-sizing: border-box;
   overflow: hidden;
+
+  // 运行中的子任务卡片需要完整高度（goal + 实时步骤）。
+  // 固定 120px 会把卡片裁成一条灰条，所以有卡片时让区域自适应撑开。
+  &.has-subagent-cards {
+    flex: 0 0 auto;
+    height: auto;
+    max-height: 55vh;
+    overflow-y: auto;
+    align-items: stretch;
+  }
 }
 
 .tool-calls-panel {
