@@ -26,7 +26,7 @@ import PendingInteractionCountdown from "./PendingInteractionCountdown.vue";
 import { LIVE_CHAT_MAX_LOADED_MESSAGES, parseMessageReference, useChatStore, type Message } from "@/stores/hermes/chat";
 import { useProfilesStore } from "@/stores/hermes/profiles";
 import { useToolTraceVisibility } from "@/composables/useToolTraceVisibility";
-import { openSubagentStream, subagentIdFromToolCall } from "@/utils/hermes/subagent-stream";
+import { subagentIdFromToolCall } from "@/utils/hermes/subagent-stream";
 import SubagentCard from './SubagentCard.vue';
 import SubagentProgressSummary from './SubagentProgressSummary.vue';
 import { messageScrollPositionKey, rememberMessageScrollPosition } from "./message-scroll-position";
@@ -99,11 +99,6 @@ function isSubagentToolCall(message: Message): boolean {
   return subagentIdFromToolCall(message.toolCallId) !== null
 }
 
-function handleToolCallClick(message: Message) {
-  if (!isSubagentToolCall(message)) return
-  openSubagentStream(chatStore.activeSessionId, message.toolCallId)
-}
-
 function formatElapsed(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
@@ -152,6 +147,34 @@ const visibleToolCalls = computed(() =>
 // the live area grows to fit them.
 const liveSubagentTools = computed(() => visibleToolCalls.value.filter(isSubagentToolCall));
 const liveChipTools = computed(() => visibleToolCalls.value.filter((tool) => !isSubagentToolCall(tool)));
+
+// 运行中的子任务卡片把 live 区域撑成自适应高度；内容溢出时内层滚动要跟随
+// 最新卡片（外层 auto-follow 只管外层 scrollTop，管不到内层盒子）。
+const liveIndicatorRef = ref<HTMLElement | null>(null)
+let liveIndicatorObserver: MutationObserver | null = null
+function followLiveIndicatorBottom() {
+  const el = liveIndicatorRef.value
+  if (el && el.scrollHeight > el.clientHeight) el.scrollTop = el.scrollHeight
+}
+watch(
+  () => [isRunIndicatorActive.value, liveSubagentTools.value.length] as const,
+  ([active, count]) => {
+    liveIndicatorObserver?.disconnect()
+    liveIndicatorObserver = null
+    if (!active || count === 0) return
+    const el = liveIndicatorRef.value
+    if (!el || typeof MutationObserver === 'undefined') {
+      nextTick(followLiveIndicatorBottom)
+      return
+    }
+    const observer = new MutationObserver(() => nextTick(followLiveIndicatorBottom))
+    observer.observe(el, { childList: true, subtree: true, characterData: true })
+    liveIndicatorObserver = observer
+    nextTick(followLiveIndicatorBottom)
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => liveIndicatorObserver?.disconnect())
 
 const liveReasoningDetail = computed<{
   messageId: Message["id"]
@@ -911,7 +934,7 @@ defineExpose({
       </template>
       <template #after>
         <Transition name="fade">
-        <div v-if="isRunIndicatorActive" class="streaming-indicator" :class="{ 'has-subagent-cards': liveSubagentTools.length > 0 }">
+        <div v-if="isRunIndicatorActive" ref="liveIndicatorRef" class="streaming-indicator" :class="{ 'has-subagent-cards': liveSubagentTools.length > 0 }">
           <LiveReasoningStatus
             :deployment-session-id="chatStore.activeSessionId || ''"
             :agent="assistantAgent"
@@ -1008,13 +1031,6 @@ defineExpose({
             <template v-for="tc in liveChipTools" :key="tc.id">
               <div
                 class="tool-call-item"
-                :class="{ 'subagent-entry': isSubagentToolCall(tc) }"
-                :role="isSubagentToolCall(tc) ? 'button' : undefined"
-              :tabindex="isSubagentToolCall(tc) ? 0 : undefined"
-              :title="isSubagentToolCall(tc) ? t('subagent.open') : undefined"
-              @click="handleToolCallClick(tc)"
-              @keydown.enter.prevent="handleToolCallClick(tc)"
-              @keydown.space.prevent="handleToolCallClick(tc)"
             >
               <svg
                 width="12"
@@ -1976,6 +1992,7 @@ defineExpose({
   &.has-subagent-cards {
     flex: 0 0 auto;
     height: auto;
+    min-height: 0;
     max-height: 55vh;
     overflow-y: auto;
     align-items: stretch;
