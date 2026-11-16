@@ -26,7 +26,7 @@ import PendingInteractionCountdown from "./PendingInteractionCountdown.vue";
 import { LIVE_CHAT_MAX_LOADED_MESSAGES, parseMessageReference, useChatStore, type Message } from "@/stores/hermes/chat";
 import { useProfilesStore } from "@/stores/hermes/profiles";
 import { useToolTraceVisibility } from "@/composables/useToolTraceVisibility";
-import { subagentIdFromToolCall } from "@/utils/hermes/subagent-stream";
+import { openSubagentStream, subagentIdFromToolCall } from "@/utils/hermes/subagent-stream";
 import SubagentCard from './SubagentCard.vue';
 import SubagentProgressSummary from './SubagentProgressSummary.vue';
 import { messageScrollPositionKey, rememberMessageScrollPosition } from "./message-scroll-position";
@@ -97,6 +97,11 @@ function toolPreviewText(preview?: string): string {
 
 function isSubagentToolCall(message: Message): boolean {
   return subagentIdFromToolCall(message.toolCallId) !== null
+}
+
+function handleToolCallClick(message: Message) {
+  if (!isSubagentToolCall(message)) return
+  openSubagentStream(chatStore.activeSessionId, message.toolCallId)
 }
 
 function formatElapsed(ms: number): string {
@@ -1040,6 +1045,13 @@ defineExpose({
             <template v-for="tc in liveChipTools" :key="tc.id">
               <div
                 class="tool-call-item"
+                :class="{ 'subagent-entry': isSubagentToolCall(tc) }"
+                :role="isSubagentToolCall(tc) ? 'button' : undefined"
+              :tabindex="isSubagentToolCall(tc) ? 0 : undefined"
+              :title="isSubagentToolCall(tc) ? t('subagent.open') : undefined"
+              @click="handleToolCallClick(tc)"
+              @keydown.enter.prevent="handleToolCallClick(tc)"
+              @keydown.space.prevent="handleToolCallClick(tc)"
             >
               <svg
                 width="12"
