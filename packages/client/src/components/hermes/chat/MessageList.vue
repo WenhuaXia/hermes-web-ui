@@ -27,6 +27,8 @@ import { LIVE_CHAT_MAX_LOADED_MESSAGES, parseMessageReference, useChatStore, typ
 import { useProfilesStore } from "@/stores/hermes/profiles";
 import { useToolTraceVisibility } from "@/composables/useToolTraceVisibility";
 import { openSubagentStream, subagentIdFromToolCall } from "@/utils/hermes/subagent-stream";
+import SubagentCard from './SubagentCard.vue';
+import SubagentProgressSummary from './SubagentProgressSummary.vue';
 import { messageScrollPositionKey, rememberMessageScrollPosition } from "./message-scroll-position";
 import { chatSessionAgentAvatar, personAvatarAnimation, personAvatarStyle } from "@/utils/chat-agent-avatar";
 import { parseThinking } from "@/utils/thinking-parser";
@@ -145,6 +147,39 @@ const currentToolCalls = computed(() => {
 const visibleToolCalls = computed(() =>
   props.hideToolCalls ? [] : currentToolCalls.value.filter((tool) => !!tool.toolName),
 );
+// Subagent cards need full height (goal + live steps); the 26px chip panel
+// clips them into an unreadable sliver, so they render below the panel and
+// the live area grows to fit them.
+const liveSubagentTools = computed(() => visibleToolCalls.value.filter(isSubagentToolCall));
+const liveChipTools = computed(() => visibleToolCalls.value.filter((tool) => !isSubagentToolCall(tool)));
+
+// 运行中的子任务卡片把 live 区域撑成自适应高度；内容溢出时内层滚动要跟随
+// 最新卡片（外层 auto-follow 只管外层 scrollTop，管不到内层盒子）。
+const liveIndicatorRef = ref<HTMLElement | null>(null)
+let liveIndicatorObserver: MutationObserver | null = null
+function followLiveIndicatorBottom() {
+  const el = liveIndicatorRef.value
+  if (el && el.scrollHeight > el.clientHeight) el.scrollTop = el.scrollHeight
+}
+watch(
+  () => [isRunIndicatorActive.value, liveSubagentTools.value.length] as const,
+  ([active, count]) => {
+    liveIndicatorObserver?.disconnect()
+    liveIndicatorObserver = null
+    if (!active || count === 0) return
+    const el = liveIndicatorRef.value
+    if (!el || typeof MutationObserver === 'undefined') {
+      nextTick(followLiveIndicatorBottom)
+      return
+    }
+    const observer = new MutationObserver(() => nextTick(followLiveIndicatorBottom))
+    observer.observe(el, { childList: true, subtree: true, characterData: true })
+    liveIndicatorObserver = observer
+    nextTick(followLiveIndicatorBottom)
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => liveIndicatorObserver?.disconnect())
 
 const liveReasoningDetail = computed<{
   messageId: Message["id"]
@@ -250,14 +285,21 @@ const displayMessages = computed(() => {
   if (isSearchFetching.value) return [];
   const messages = chatStore.messages;
   const currentToolIds = new Set(currentToolCalls.value.map((tool) => tool.id));
+  // Skip leading command messages before first user to avoid init noise
+  const firstUserIdx = chatStore.messages.findIndex(m => m.role === 'user');
+
   const renderedMessages = messages
-    .filter((m) => {
+    .filter((m, index) => {
       if (props.hideToolCalls && m.role === "tool") return false;
       if (m.id === chatStore.focusMessageId && !props.hideReasoning) return true;
       if (m.role === "tool") {
         return toolTraceVisible.value && !!m.toolName && !(isRunIndicatorActive.value && currentToolIds.has(m.id));
       }
       if (m.role === "assistant" && !hasRenderableAssistantContent(m)) return false;
+      // Skip command messages before the first user message
+      if (m.role === 'command' && firstUserIdx > 0 && index < firstUserIdx) {
+        return false;
+      }
       return true;
     })
     .map((message) => {
@@ -812,6 +854,7 @@ defineExpose({
       :positive-button-props="{ loading: deletingMessages, disabled: selectionUnavailable }"
       :negative-button-props="{ disabled: deletingMessages }" :mask-closable="!deletingMessages" :closable="!deletingMessages"
       @positive-click="deleteSelectedMessages" />
+    <SubagentProgressSummary />
     <VirtualMessageList
       v-if="!isSearchFetching"
       :key="activeSessionScrollKey || 'chat-empty'"
@@ -905,7 +948,7 @@ defineExpose({
       </template>
       <template #after>
         <Transition name="fade">
-        <div v-if="isRunIndicatorActive" class="streaming-indicator">
+        <div v-if="isRunIndicatorActive" ref="liveIndicatorRef" class="streaming-indicator" :class="{ 'has-subagent-cards': liveSubagentTools.length > 0 }">
           <LiveReasoningStatus
             :deployment-session-id="chatStore.activeSessionId || ''"
             :agent="assistantAgent"
@@ -915,7 +958,7 @@ defineExpose({
             :reasoning-id="liveReasoningDetail?.messageId"
             :elapsed="formattedThinkingElapsed"
           />
-          <div v-if="visibleToolCalls.length > 0 || chatStore.compressionState || chatStore.abortState" class="tool-calls-panel">
+          <div v-if="liveChipTools.length > 0 || chatStore.compressionState || chatStore.abortState" class="tool-calls-panel">
             <!-- Abort indicator -->
             <div v-if="chatStore.abortState" class="tool-call-item compression-item">
               <svg
@@ -998,13 +1041,12 @@ defineExpose({
                 class="tool-call-spinner"
               ></span>
             </div>
-            <!-- Tool calls -->
-            <div
-              v-for="tc in visibleToolCalls"
-              :key="tc.id"
-              class="tool-call-item"
-              :class="{ 'subagent-entry': isSubagentToolCall(tc) }"
-              :role="isSubagentToolCall(tc) ? 'button' : undefined"
+            <!-- Tool calls (compact chips; subagent cards render below the panel) -->
+            <template v-for="tc in liveChipTools" :key="tc.id">
+              <div
+                class="tool-call-item"
+                :class="{ 'subagent-entry': isSubagentToolCall(tc) }"
+                :role="isSubagentToolCall(tc) ? 'button' : undefined"
               :tabindex="isSubagentToolCall(tc) ? 0 : undefined"
               :title="isSubagentToolCall(tc) ? t('subagent.open') : undefined"
               @click="handleToolCallClick(tc)"
@@ -1077,7 +1119,12 @@ defineExpose({
                 />
               </svg>
             </div>
+            </template>
           </div>
+          <!-- 子任务结构化卡片：完整高度，不被 26px 工具条裁切 -->
+          <template v-for="tc in liveSubagentTools" :key="tc.id">
+            <SubagentCard :tool-call-id="tc.toolCallId" />
+          </template>
         </div>
         </Transition>
       </template>
@@ -1969,6 +2016,17 @@ defineExpose({
   padding: calc(4px * var(--spacing-scale, 1));
   box-sizing: border-box;
   overflow: hidden;
+
+  // 运行中的子任务卡片需要完整高度（goal + 实时步骤）。
+  // 固定 120px 会把卡片裁成一条灰条，所以有卡片时让区域自适应撑开。
+  &.has-subagent-cards {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+    max-height: 55vh;
+    overflow-y: auto;
+    align-items: stretch;
+  }
 }
 
 .tool-calls-panel {

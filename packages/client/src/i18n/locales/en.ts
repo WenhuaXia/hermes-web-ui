@@ -1091,7 +1091,8 @@ export default {
   subagent: {
     title: 'Background task', noGoal: 'Untitled background task', open: 'Open live background task output', close: 'Close background task output',
     waiting: 'Waiting for live output...', tool: 'Tool', tools: '{count} tools', tokens: '{input} in · {output} out',
-    started: 'Started', running: 'Running', completed: 'Completed', failed: 'Failed', cancelled: 'Cancelled', interrupted: 'Interrupted',
+    started: 'Started', running: 'Running', completed: 'Completed', failed: 'Failed', cancelled: 'Cancelled', interrupted: 'Interrupted',    summaryTotal: 'background subtasks', resultRecycled: 'Result recycled', autoRecycle: 'Results auto-recycled', noResult: 'No result summary', expandOutput: 'Expand full log', collapseOutput: 'Collapse log', batch: 'Batch {n}', abort: 'Abort',
+
   },
 
   realtimeVoice: {
@@ -1223,6 +1224,8 @@ export default {
     outlineTitle: 'Conversation Outline',
     outlineEmpty: 'No conversation content',
     outlineUserQuestion: 'User question',
+    outlineAnswer: 'Answer',
+    loadAllMessages: 'Load All',
     inputPlaceholder: 'Type a message... (Enter to send, Shift+Enter for new line)',
     inputHeightResizeHint: 'Drag to resize the chat input. Double-click to reset.',
     slashCommandArgs: {
@@ -2908,6 +2911,11 @@ export default {
       protectLastNHint: 'Keep this many latest messages uncompressed',
       protectFirstN: 'Protect First Messages',
       protectFirstNHint: 'Keep this many earliest messages uncompressed',
+      microCompactDefault: 'Rolling micro-compaction (global switch)',
+      microCompactDefaultHint: 'When on, all hermes profiles (existing and new) enable rolling micro-compaction (micro_compact); off disables all. Applies instantly on toggle.',
+      microCompactApplied: 'Applied to {count} profile(s)',
+      microCompactSkipped: 'Skipped {count} (no config): {list}',
+      microCompactFailed: 'Apply failed',
     },
     session: {
       mode: 'Reset Mode',
