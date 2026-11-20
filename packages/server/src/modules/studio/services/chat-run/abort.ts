@@ -18,9 +18,11 @@ import { flushResponseRunToDb } from './response-stream'
 import { replaceState } from './compression'
 import { calcAndUpdateUsage } from './usage'
 import { finalizeAbortedRunUsage } from './terminal-usage'
+import { persistDelegationTerminal, persistInterruptedDelegations } from './background-delegation-terminal'
 import type { QueuedRun, SessionState } from './types'
 
 const ABORT_BRIDGE_SYNC_TIMEOUT_MESSAGE = 'Hermes Agent did not confirm stop before timeout. Local run state was released so you can continue.'
+const ABORT_DELEGATION_SUMMARY = '已中止：用户停止等待该子任务'
 const abortCompletions = new WeakMap<SessionState, { runId: string; runMarker?: string }>()
 const abortRequests = new WeakMap<SessionState, Promise<void>>()
 
@@ -110,6 +112,18 @@ export async function handleAbort(
       state.abortController = undefined
       state.runId = undefined
       state.events = []
+      // Persist terminal state for in-flight subagent cards. Without this the
+      // abort only settles the in-memory UI: the DB row keeps no terminal
+      // display_content, so the next refresh restores the card as 'running'
+      // again and the user's Stop never takes effect (fake abort).
+      try {
+        const settled = persistInterruptedDelegations(sessionId, state, ABORT_DELEGATION_SUMMARY)
+        if (settled.length > 0) {
+          logger.info({ sessionId, settled }, '[chat-run-socket][abort] persisted interrupted state for in-flight delegations')
+        }
+      } catch (err) {
+        logger.warn(err, '[chat-run-socket][abort] failed to persist interrupted delegations')
+      }
     }
     emitToSession(nsp, socket, sessionId, 'abort.completed', {
       event: 'abort.completed',
@@ -190,11 +204,28 @@ export async function handleAbort(
         for (const delegationId of interruptedDelegationIds) {
           activeState.backgroundDelegations = activeState.backgroundDelegations || {}
           const previous = activeState.backgroundDelegations[delegationId]
-          activeState.backgroundDelegations[delegationId] = {
-            delegationId,
-            status: 'interrupted',
-            profile: previous?.profile || activeState.profile || 'default',
-            updatedAt: Date.now(),
+          // Persist the terminal card state; fall back to in-memory settlement
+          // (keeping the previous item's fields) when the dispatch row is unknown.
+          try {
+            const persisted = persistDelegationTerminal(sessionId, activeState, delegationId, 'interrupted', ABORT_DELEGATION_SUMMARY)
+            if (!persisted && previous) {
+              activeState.backgroundDelegations[delegationId] = {
+                ...previous,
+                delegationId,
+                status: 'interrupted',
+                updatedAt: Date.now(),
+              }
+            }
+          } catch (err) {
+            logger.warn(err, '[chat-run-socket][abort] failed to persist interrupted delegation %s', delegationId)
+            if (previous) {
+              activeState.backgroundDelegations[delegationId] = {
+                ...previous,
+                delegationId,
+                status: 'interrupted',
+                updatedAt: Date.now(),
+              }
+            }
           }
           emitToSession(nsp, socket, sessionId, 'delegation.updated', {
             event: 'delegation.updated',
@@ -259,6 +290,14 @@ export async function handleAbort(
   }
 
   if (!isCurrentAbort()) return
+  // Settle any subagent cards still running after the run was aborted (coding
+  // agent / response stream paths). Truth wins: if the child later completes,
+  // its completion report overwrites this terminal state.
+  try {
+    persistInterruptedDelegations(sessionId, activeState, ABORT_DELEGATION_SUMMARY)
+  } catch (err) {
+    logger.warn(err, '[chat-run-socket][abort] failed to persist interrupted delegations')
+  }
   await markAbortCompleted(nsp, socket, sessionId, runId || 'response_stream', sessionMap, runQueuedItem, true, runMarker)
 }
 
