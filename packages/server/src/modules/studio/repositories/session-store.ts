@@ -1018,6 +1018,20 @@ export function updateMessageDisplayContent(
   return result.changes > 0
 }
 
+/** Read the current display_content of one message (null when absent/unparseable-safe callers handle JSON). */
+export function getMessageDisplayContent(
+  sessionId: string,
+  messageId: number | string,
+): string | null {
+  if (!isSqliteAvailable()) return null
+  const db = getDb()!
+  const row = db.prepare(
+    `SELECT display_content FROM ${MESSAGES_TABLE}
+     WHERE session_id = ? AND id = ?`,
+  ).get(sessionId, messageId) as { display_content: string | null } | undefined
+  return row?.display_content ?? null
+}
+
 export function getMessageCount(sessionId: string): number {
   if (!isSqliteAvailable()) return 0
   const db = getDb()!
@@ -1065,6 +1079,60 @@ export function getSessionContextMessage(sessionId: string, messageId: number): 
      WHERE session_id = ? AND id = ? AND role IN ('user', 'assistant', 'tool')`,
   ).get(sessionId, messageId) as Record<string, unknown> | undefined
   return row ? mapMessageRow(row) : null
+}
+
+/** Find the newest delegate_task dispatch record for a delegation id (newest first). */
+export function findBackgroundDispatchMessages(sessionId: string, delegationId: string, limit = 10): HermesMessageRow[] {
+  if (!isSqliteAvailable() || !delegationId.trim()) return []
+  const pattern = `%"delegation_id":"${delegationId.trim()}%"`
+  const rows = getDb()!.prepare(
+    `SELECT * FROM ${MESSAGES_TABLE}
+     WHERE session_id = ? AND tool_name = 'delegate_task'
+       AND (content LIKE ? OR display_content LIKE ?)
+     ORDER BY id DESC
+     LIMIT ?`,
+  ).all(sessionId, pattern, pattern, limit) as Record<string, unknown>[]
+  return rows.map(mapMessageRow)
+}
+
+export interface OrphanBackgroundDispatchRow {
+  id: number
+  timestamp: number
+  delegationId: string
+  dispatchPayload: Record<string, unknown>
+}
+
+/**
+ * Background delegate_task dispatch rows that have no terminal display_content,
+ * including rows outside the hydration window (older messages). These are the
+ * zombies that would otherwise stay 'running' forever in the history view.
+ */
+export function findOrphanBackgroundDispatchRows(sessionId: string): OrphanBackgroundDispatchRow[] {
+  if (!isSqliteAvailable()) return []
+  const rows = getDb()!.prepare(
+    `SELECT id, timestamp, content FROM ${MESSAGES_TABLE}
+     WHERE session_id = ? AND tool_name = 'delegate_task'
+       AND (display_content IS NULL OR display_content = '')
+     ORDER BY id DESC`,
+  ).all(sessionId) as Array<{ id: number; timestamp: number | null; content: string | null }>
+  const out: OrphanBackgroundDispatchRow[] = []
+  for (const row of rows) {
+    try {
+      const payload = JSON.parse(String(row.content || '')) as Record<string, unknown>
+      if (payload?.mode !== 'background') continue
+      const delegationId = String(payload.delegation_id || '').trim()
+      if (!delegationId) continue
+      out.push({
+        id: row.id,
+        timestamp: Number(row.timestamp || 0),
+        delegationId,
+        dispatchPayload: payload,
+      })
+    } catch {
+      // Non-JSON delegate results are not dispatch records.
+    }
+  }
+  return out
 }
 
 export function getSessionContextMessageCount(sessionId: string, throughId?: number): number {

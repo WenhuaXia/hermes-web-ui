@@ -1,6 +1,7 @@
 import type { ReasoningCodec } from '../../../studio/public/model-reasoning-codec'
 // Shared Responses payload translation for Coding Agent provider proxies.
 import { createHash } from 'node:crypto'
+import { logger } from '../../../studio/public/logging'
 import { imageUrlToAnthropicSource, openAiImageUrl } from './multimodal'
 import { shouldPreserveReasoningContent } from './anthropic'
 
@@ -1000,6 +1001,15 @@ export function openAiChatToResponses(data: any, target: ResponsesAdapterTarget)
       output.length,
       target.mcpToolRoutes,
     ))
+  }
+
+  if (output.length === 0) {
+    // Silent-success trap: upstream answered but produced nothing. Warn so
+    // the next recurrence is diagnosable from the log alone.
+    logger.warn(
+      { model: target.model, finishReason: choice.finish_reason ?? null, usage: usageFromChat(data) ?? null },
+      '[responses] upstream chat completions response has no text, reasoning or tool output',
+    )
   }
 
   return {

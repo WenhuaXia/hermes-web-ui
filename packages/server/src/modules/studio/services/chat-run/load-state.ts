@@ -2,6 +2,8 @@ import { isNativeCodingAgent } from '../../contracts/agents/native-coding-agents
 import {
   getSession,
   getSessionDetailPaginated,
+  findOrphanBackgroundDispatchRows,
+  updateMessageDisplayContent,
 } from '../../repositories/session-store'
 import { getRecordedUsageTotals, getUsage } from '../../repositories/usage-store'
 import { logger } from '../../public/logging'
@@ -11,6 +13,23 @@ import { estimateSessionContextTokens } from './context-usage'
 import { getSessionContextUsageEstimate } from '../../repositories/session-context-usage'
 import type { ChatRunSource, SessionState } from './types'
 import { historySessionSource, isBuiltinEkkoAgent } from '../../contracts/history-source'
+import { buildDelegationTerminalPayload, decideDelegationSweep, persistDelegationTerminal } from './background-delegation-terminal'
+import { getDelegationSweepRows } from '../../../hermes/services/history/sessions-db'
+
+/** Map a persisted display_content payload to a terminal background-delegation status. */
+export function backgroundDelegationTerminalStatus(displayContent: unknown): 'completed' | 'failed' | 'interrupted' | null {
+  if (!displayContent) return null
+  try {
+    const display = typeof displayContent === 'string' ? JSON.parse(displayContent) : (displayContent as Record<string, unknown>)
+    const displayStatus = String(display?.status || '').toLowerCase()
+    if (displayStatus === 'completed') return 'completed'
+    if (displayStatus === 'failed' || displayStatus === 'error') return 'failed'
+    if (displayStatus === 'interrupted' || displayStatus === 'cancelled' || displayStatus === 'canceled') return 'interrupted'
+  } catch {
+    // Non-JSON display content is not a terminal record.
+  }
+  return null
+}
 
 function restoreBackgroundDelegations(messages: any[]): SessionState['backgroundDelegations'] {
   const delegations: NonNullable<SessionState['backgroundDelegations']> = {}
@@ -21,13 +40,8 @@ function restoreBackgroundDelegations(messages: any[]): SessionState['background
       const delegationId = String(payload.delegation_id || '').trim()
       if (payload.runtime === 'ekko' || payload.mode !== 'background' || !delegationId) continue
       let status: 'running' | 'completed' | 'failed' | 'interrupted' = 'running'
-      if (message.display_content) {
-        const display = JSON.parse(String(message.display_content)) as Record<string, unknown>
-        const displayStatus = String(display.status || '').toLowerCase()
-        if (displayStatus === 'completed') status = 'completed'
-        else if (displayStatus === 'failed' || displayStatus === 'error') status = 'failed'
-        else if (displayStatus === 'interrupted' || displayStatus === 'cancelled') status = 'interrupted'
-      }
+      const terminal = backgroundDelegationTerminalStatus(message.display_content)
+      if (terminal) status = terminal
       delegations[delegationId] = {
         delegationId,
         status,
@@ -54,7 +68,61 @@ export function resolveRunSource(source?: string, sessionId?: string): ChatRunSo
 }
 
 export async function loadSessionStateFromDb(sid: string, _sessionMap: Map<string, SessionState>): Promise<SessionState> {
-  return readSessionStateFromDb(sid)
+  const state = readSessionStateFromDb(sid)
+  try {
+    await sweepStaleBackgroundDelegations(sid, state)
+  } catch (err) {
+    logger.warn(err, '[chat-run-socket] stale background delegation sweep failed for session %s', sid)
+  }
+  return state
+}
+
+/**
+ * Self-heal on session load: settle subagent cards that still read 'running'
+ * although the hermes-side record proves the child is dead (or finished).
+ * Without this, a completion that never reached the mirror leaves the card
+ * stuck at 'running' forever and aborts can never make it terminal.
+ * Covers both restored (hydration window) delegations and orphan dispatch
+ * rows outside the window (visible in the history view).
+ * Best-effort: any failure keeps the restored state unchanged.
+ */
+export async function sweepStaleBackgroundDelegations(sessionId: string, state: SessionState): Promise<void> {
+  const restored = Object.values(state.backgroundDelegations || {}).filter(
+    (item) => (item.status === 'running' || item.status === 'delivering') && item.messageId != null,
+  )
+  const orphans = findOrphanBackgroundDispatchRows(sessionId)
+  const knownIds = new Set(restored.map((item) => item.delegationId))
+  const orphanItems = orphans.filter((row) => !knownIds.has(row.delegationId))
+  if (restored.length === 0 && orphanItems.length === 0) return
+  const profile = restored.find((item) => item.profile)?.profile || getSession(sessionId)?.profile
+  const rows = await getDelegationSweepRows(profile, [
+    ...restored.map((item) => item.delegationId),
+    ...orphanItems.map((row) => row.delegationId),
+  ])
+  const nowMs = Date.now()
+  for (const item of restored) {
+    const row = rows.get(item.delegationId) || null
+    const decision = decideDelegationSweep({ row, updatedAtMs: item.updatedAt, nowMs })
+    if (decision.decision !== 'terminal') continue
+    persistDelegationTerminal(sessionId, state, item.delegationId, decision.status, decision.summary, row?.taskResults)
+  }
+  for (const orphan of orphanItems) {
+    const row = rows.get(orphan.delegationId) || null
+    const decision = decideDelegationSweep({ row, updatedAtMs: orphan.timestamp * 1000, nowMs })
+    if (decision.decision !== 'terminal') continue
+    const payload = buildDelegationTerminalPayload({
+      delegationId: orphan.delegationId,
+      dispatchPayload: orphan.dispatchPayload,
+      backgroundTasks: {},
+      status: decision.status,
+      summary: decision.summary,
+      taskResults: row?.taskResults,
+    })
+    if (updateMessageDisplayContent(sessionId, orphan.id, JSON.stringify(payload))) {
+      logger.info('[chat-run-socket] swept orphan background dispatch %s → %s (session %s)',
+        orphan.delegationId, decision.status, sessionId)
+    }
+  }
 }
 
 /** Synchronous SQLite hydration keeps cache creation atomic with run admission. */
