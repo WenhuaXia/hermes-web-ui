@@ -1091,7 +1091,8 @@ export default {
   subagent: {
     title: '后台子任务', noGoal: '未命名后台子任务', open: '打开后台子任务实时输出', close: '关闭后台子任务输出',
     waiting: '正在等待实时输出…', tool: '工具', tools: '{count} 次工具调用', tokens: '输入 {input} · 输出 {output}',
-    started: '已启动', running: '执行中', completed: '已完成', failed: '执行失败', cancelled: '已取消', interrupted: '已停止',
+    started: '已启动', running: '执行中', completed: '已完成', failed: '执行失败', cancelled: '已取消', interrupted: '已停止',    summaryTotal: '个子任务', resultRecycled: '结论已回贴', autoRecycle: '结果自动回贴', noResult: '暂无结果摘要', expandOutput: '展开执行过程', collapseOutput: '收起执行过程', batch: '批次 {n}', abort: '中止',
+
   },
 
   realtimeVoice: {
@@ -1223,6 +1224,8 @@ export default {
     outlineTitle: '会话大纲',
     outlineEmpty: '暂无会话内容',
     outlineUserQuestion: '用户问题',
+    outlineAnswer: '回答',
+    loadAllMessages: '加载所有消息',
     inputPlaceholder: '输入消息... (Enter 发送，Shift+Enter 换行)',
     inputHeightResizeHint: '拖拽调整聊天输入框高度，双击恢复自动高度。',
     slashCommandArgs: {
@@ -2946,6 +2949,11 @@ export default {
       protectLastNHint: '最近多少条消息不参与压缩',
       protectFirstN: '保护开头消息',
       protectFirstNHint: '最早多少条消息不参与压缩',
+      microCompactDefault: '滚动微压缩（全局开关）',
+      microCompactDefaultHint: '开启后，所有 hermes Profile（含已有与新建）都会启用滚动微压缩（micro_compact）；关闭则全部停用。切换即时应用。',
+      microCompactApplied: '已应用到 {count} 个 Profile',
+      microCompactSkipped: '跳过 {count} 个（无 config）：{list}',
+      microCompactFailed: '应用失败',
     },
     session: {
       mode: '重置模式',

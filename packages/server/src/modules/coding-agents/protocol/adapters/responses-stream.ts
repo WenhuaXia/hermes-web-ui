@@ -1,5 +1,6 @@
 import type { ReasoningCodec } from '../../../studio/public/model-reasoning-codec'
 // Shared Responses stream translation for Coding Agent provider proxies.
+import { logger } from '../../../studio/public/logging'
 import { readSseFrameTexts } from '../sse'
 import { type McpToolRoutes, normalizeResponseFunctionCall, responseToolNamespaceForName } from './responses'
 
@@ -208,6 +209,8 @@ export async function* openAiChatSseToResponsesEvents(
   let text = ''
   let reasoning = ''
   let usage: Record<string, unknown> | undefined
+  let upstreamFinishReason: string | undefined
+  let upstreamError: unknown
   const toolCalls = new Map<number, { id: string; name: string; arguments: string; added: boolean; outputIndex: number }>()
 
   yield {
@@ -244,7 +247,19 @@ export async function* openAiChatSseToResponsesEvents(
           usage = { ...(usage || {}), ...data.usage }
         }
         const choice = data?.choices?.[0]
-        if (!choice) continue
+        if (!choice) {
+          // In-band upstream error frames (e.g. {"error": {...}} without
+          // choices) must be captured, not swallowed: otherwise the client
+          // sees a "successful but empty" completion and cannot tell an
+          // upstream fault from a protocol bug.
+          if (data && typeof data === 'object' && (data.error || data.message)) {
+            upstreamError = data.error ?? data
+          }
+          continue
+        }
+        if (typeof choice.finish_reason === 'string' && choice.finish_reason) {
+          upstreamFinishReason = choice.finish_reason
+        }
 
         const delta = choice.delta || {}
         const reasoningDelta = openAiChatReasoningDelta(delta, reasoning)
@@ -441,6 +456,41 @@ export async function* openAiChatSseToResponsesEvents(
   const output = indexedOutput
     .sort((left, right) => left.outputIndex - right.outputIndex)
     .map(entry => entry.item)
+
+  if (upstreamError) {
+    const message = typeof (upstreamError as any)?.message === 'string'
+      ? String((upstreamError as any).message)
+      : JSON.stringify(upstreamError)
+    logger.warn(
+      { model: target.model, finishReason: upstreamFinishReason ?? null, usage: usage ?? null, upstreamError: message },
+      '[responses-stream] upstream chat completions stream reported an in-band error',
+    )
+    yield {
+      type: 'response.failed',
+      data: {
+        type: 'response.failed',
+        response: {
+          id,
+          object: 'response',
+          status: 'failed',
+          model: target.model,
+          error: { code: 'upstream_error', message },
+        },
+      },
+    }
+    return
+  }
+
+  if (output.length === 0) {
+    // Silent-success trap: the stream ended cleanly but carried no text,
+    // reasoning or tool output. Warn with the upstream context so the next
+    // recurrence is diagnosable from the log alone.
+    logger.warn(
+      { model: target.model, finishReason: upstreamFinishReason ?? null, usage: usage ?? null, upstreamError: null },
+      '[responses-stream] upstream chat completions stream finished with no text, reasoning or tool output',
+    )
+  }
+
   yield {
     type: 'response.completed',
     data: {

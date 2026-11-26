@@ -63,3 +63,30 @@ it('relays upstream keep-alive comments as Responses activity before model outpu
   expect(remaining.find(event => event.type === 'response.output_text.delta')?.data.delta).toBe('OK')
   expect(remaining.at(-1)?.type).toBe('response.completed')
 })
+
+it('completes with empty output instead of crashing when the upstream stream carries no content', async () => {
+  async function* upstream() {
+    yield Buffer.from('data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":40}}\n\n')
+    yield Buffer.from('data: [DONE]\n\n')
+  }
+  const events = []
+  for await (const event of openAiChatSseToResponsesEvents(upstream(), { model: 'qwen3-27b' })) events.push(event)
+  const completed = events.at(-1)
+  expect(completed?.type).toBe('response.completed')
+  expect((completed?.data.response as any).output).toEqual([])
+  expect(events.find(event => event.type === 'response.failed')).toBeUndefined()
+})
+
+it('emits response.failed when the upstream stream reports an in-band error frame', async () => {
+  async function* upstream() {
+    yield Buffer.from('data: {"error":{"message":"engine exploded","type":"server_error"}}\n\n')
+    yield Buffer.from('data: [DONE]\n\n')
+  }
+  const events = []
+  for await (const event of openAiChatSseToResponsesEvents(upstream(), { model: 'qwen3-27b' })) events.push(event)
+  const failed = events.find(event => event.type === 'response.failed')
+  expect(failed).toBeTruthy()
+  expect((failed?.data.response as any).status).toBe('failed')
+  expect((failed?.data.response as any).error.message).toContain('engine exploded')
+  expect(events.find(event => event.type === 'response.completed')).toBeUndefined()
+})
